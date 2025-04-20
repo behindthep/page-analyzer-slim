@@ -30,7 +30,8 @@
     "illuminate/collections": "^12.0",
     "nesbot/carbon": "^3.9",
     "symfony/string": "^7.2",
-    "phpstan/phpstan": "^2.1"
+    "phpstan/phpstan": "^2.1",
+    "slim/slim": "^4.14"
   },
   "require-dev": {
     "psy/psysh": "@stable",
