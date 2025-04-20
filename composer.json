@@ -1,29 +1,25 @@
 {
-  "name": "hexlet/php-package",
-  "version": "0.0.1",
-  "bin": [
-    "bin/php-package"
-  ],
-  "type": "library",
+  "name": "behindthpe/page-analyzer",
+  "type": "project",
   "authors": [
     {
-      "name": "Kirill Mokevnin",
-      "email": "mokevnin@gmail.com"
+      "name": "Alexey Kolvakh",
+      "email": "alex.kolvah@mail.ru"
     }
   ],
-  "description": "hexlet php-package",
+  "description": "page analyzer",
   "license": "MIT",
   "scripts": {
     "test": "phpunit tests"
   },
   "autoload": {
     "psr-4": {
-      "Php\\Package\\": "src"
+      "Page\\Analyzer\\": "src"
     }
   },
   "autoload-dev": {
     "psr-4": {
-      "Php\\Package\\Tests\\": "tests"
+      "Page\\Analyzer\\Tests\\": "tests"
     }
   },
   "require": {
