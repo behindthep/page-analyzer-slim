@@ -1,12 +1,12 @@
 # page-analyzer
 
 [![Github Actions Status](https://github.com/behindthep/page-analyzer/actions/workflows/workflow.yml/badge.svg)](https://github.com/behindthep/page-analyzer/actions)
+[![Quality Gate Status](https://sonarcloud.io/api/project_badges/measure?project=behindthep_page-analyzer&metric=alert_status)](https://sonarcloud.io/summary/new_code?id=behindthep_page-analyzer)
 
-[![Quality Gate Status](https://sonarcloud.io/api/project_badges/measure?project=hexlet-boilerplates_php-package&metric=alert_status)](https://sonarcloud.io/summary/new_code?id=hexlet-boilerplates_php-package)
-[![Bugs](https://sonarcloud.io/api/project_badges/measure?project=hexlet-boilerplates_php-package&metric=bugs)](https://sonarcloud.io/summary/new_code?id=hexlet-boilerplates_php-package)
-[![Code Smells](https://sonarcloud.io/api/project_badges/measure?project=hexlet-boilerplates_php-package&metric=code_smells)](https://sonarcloud.io/summary/new_code?id=hexlet-boilerplates_php-package)
-[![Coverage](https://sonarcloud.io/api/project_badges/measure?project=hexlet-boilerplates_php-package&metric=coverage)](https://sonarcloud.io/summary/new_code?id=hexlet-boilerplates_php-package)
-[![Duplicated Lines (%)](https://sonarcloud.io/api/project_badges/measure?project=hexlet-boilerplates_php-package&metric=duplicated_lines_density)](https://sonarcloud.io/summary/new_code?id=hexlet-boilerplates_php-package)
+[![Bugs](https://sonarcloud.io/api/project_badges/measure?project=behindthep_page-analyzer&metric=bugs)](https://sonarcloud.io/summary/new_code?id=behindthep_page-analyzer)
+[![Code Smells](https://sonarcloud.io/api/project_badges/measure?project=behindthep_page-analyzer&metric=code_smells)](https://sonarcloud.io/summary/new_code?id=behindthep_page-analyzer)
+[![Coverage](https://sonarcloud.io/api/project_badges/measure?project=behindthep_page-analyzer&metric=coverage)](https://sonarcloud.io/summary/new_code?id=behindthep_page-analyzer)
+[![Duplicated Lines (%)](https://sonarcloud.io/api/project_badges/measure?project=behindthep_page-analyzer&metric=duplicated_lines_density)](https://sonarcloud.io/summary/new_code?id=behindthep_page-analyzer)
 
 ## Prerequisites
 
