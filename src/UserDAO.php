@@ -2,10 +2,12 @@
 
 namespace Page\Analyzer;
 
-class UserDAO {
+class UserDAO
+{
     private ?\PDO $pdo;
 
-    public function __construct() {
+    public function __construct()
+    {
         try {
             $dsn = "pgsql:host=localhost;port=5432;dbname=practice1;";
             $user = "alex";
@@ -84,4 +86,3 @@ class UserDAO {
         $stmt->execute([$id]);
     }
 }
-
