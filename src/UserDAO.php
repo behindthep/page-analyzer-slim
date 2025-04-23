@@ -3,10 +3,37 @@
 namespace Page\Analyzer;
 
 class UserDAO {
-    private \PDO $pdo;
+    private ?\PDO $pdo;
 
-    public function __construct(\PDO $pdo) {
-        $this->pdo = $pdo;
+    public function __construct() {
+        try {
+            $dsn = "pgsql:host=localhost;port=5432;dbname=practice1;";
+            $user = "alex";
+            $password = "";
+            $this->pdo = new \PDO($dsn, $user, $password, [\PDO::ATTR_ERRMODE => \PDO::ERRMODE_EXCEPTION]);
+            $this->pdo->setAttribute(\PDO::ATTR_DEFAULT_FETCH_MODE, \PDO::FETCH_ASSOC);
+        } catch (\PDOException $e) {
+            die($e->getMessage());
+        } finally {
+            if ($this->pdo) {
+                $this->pdo = null;
+            }
+        }
+    }
+
+    public function createTable(): void
+    {
+        $sql = "CREATE TABLE IF NOT EXISTS users (id SERIAL PRIMARY KEY, username TEXT, phone TEXT)";
+        $stmt = $this->pdo->prepare($sql);
+        $stmt->execute();
+    }
+
+    public function selectAll(): void
+    {
+        $sql = "SELECT * FROM users";
+        $stmt = $this->pdo->query($sql);
+        $result = $stmt->fetchAll();
+        print_r($result);
     }
 
     public function save(User $user): void
