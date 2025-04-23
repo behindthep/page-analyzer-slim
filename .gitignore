@@ -6,3 +6,6 @@ logs
 build
 coverage.xml
 .env
+.idea
+.DS_Store
+.vscode
