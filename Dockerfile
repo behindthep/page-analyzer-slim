@@ -5,6 +5,9 @@ FROM php:8.0-apache
 RUN apt-get update && apt-get install -y libpq-dev \
     && docker-php-ext-install pdo pdo_pgsql
 
+# Устанавливаем Composer
+RUN curl -sS https://getcomposer.org/installer | php -- --install-dir=/usr/bin --filename=composer
+
 # Копируем локальные файлы в контейнер
 COPY . /var/www/html/
 
@@ -14,8 +17,5 @@ WORKDIR /var/www/html
 # Устанавливаем права доступа
 RUN chown -R www-data:www-data /var/www/html
 
-# Установка Composer (если необходимо)
-COPY --from=composer:latest /usr/bin/composer /usr/bin/composer
-
-# Устанавливаем зависимости через Composer (если есть)
+# Устанавливаем зависимости через Composer
 RUN composer install
