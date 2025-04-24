@@ -4,14 +4,16 @@ namespace Page\Analyzer;
 
 require_once __DIR__ . '/../vendor/autoload.php';
 
-$dao = new UserDAO();
+use Slim\Factory\AppFactory;
 
-$dao->createTable();
+$app = AppFactory::create();
 
-$user1 = new User('John', '555-1234');
-$dao->save($user1);
+$app->get('/', function ($request, $response) {
+    return $response->write('Welcome to Slim!');
+});
 
-$user1->setUsername('John junior');
-$dao->save($user1);
+$app->get('/about', function ($request, $response) {
+    return $response->write('About My Site');
+});
 
-$dao->selectAll();
+$app->run();
