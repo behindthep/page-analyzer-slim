@@ -1,6 +1,10 @@
 install:
 	composer install
 
+# -t меняет корневую директорую — место поиска index.php. помещать в нее только то что открыть напрямую из браузера
+start:
+	php -S localhost:8080 -t public public/index.php
+
 console:
 	composer exec --verbose psysh
 
