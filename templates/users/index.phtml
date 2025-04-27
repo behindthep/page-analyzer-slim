@@ -1,16 +1,29 @@
-<form action="/users" method="get">
-  <input type="search" required name="term" value="<?= htmlspecialchars($term) ?>">
-  <input type="submit" value="Search" />
-</form>
+<p style="color: green;">
+  <?php if (!empty($flash['success'])): ?>
+      <?= htmlspecialchars($flash['success'][0]) ?>
+  <?php endif; ?>
+</p>
 
 <table>
-  <?php foreach ($users as $user): ?>
+  <?php 
+  $cities = [
+    '3' => 'Москва',
+    '13' => 'Пенза',
+    '399' => 'Томск'
+  ];
+  foreach ($users as $user): ?>
     <tr>
+    <td>
+        <?= htmlspecialchars($user['id']) ?>
+    </td>
       <td>
-          <?= $user['id'] ?>
+          <?= htmlspecialchars($user['name']) ?>
       </td>
       <td>
-          <?= $user['nickname'] ?>
+          <?= htmlspecialchars($user['email']) ?>
+      </td>
+      <td>
+          <?= htmlspecialchars($cities[$user['city']]) ?>
       </td>
     </tr>
   <?php endforeach; ?>

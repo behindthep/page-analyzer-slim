@@ -1,2 +1,22 @@
-<h1>Hello, <?= $id ?></h1>
-<h1>Nick <?= $nickname ?></h1>
+<table>
+  <?php 
+  $cities = [
+    '3' => 'Москва',
+    '13' => 'Пенза',
+    '399' => 'Томск'
+  ]; ?>
+    <tr>
+    <td>
+        <?= htmlspecialchars($user['id']) ?>
+    </td>
+      <td>
+          <?= htmlspecialchars($user['name']) ?>
+      </td>
+      <td>
+          <?= htmlspecialchars($user['email']) ?>
+      </td>
+      <td>
+          <?= htmlspecialchars($cities[$user['city']]) ?>
+      </td>
+    </tr>
+</table>
