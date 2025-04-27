@@ -1,53 +1,95 @@
 <?php
-
 namespace Page\Analyzer;
-
 require_once __DIR__ . '/../vendor/autoload.php';
-
 use Slim\Factory\AppFactory;
 use DI\Container;
+use Psr\Http\Message\ServerRequestInterface as Request;
+use Psr\Http\Message\ResponseInterface as Response;
+
+session_start();
 
 $container = new Container();
-
 $container->set('renderer', function () {
-    // Параметром передается базовая директория, в которой храниться шаблоны
     return new \Slim\Views\PhpRenderer(__DIR__ . '/../templates');
 });
-
+$container->set('flash', function () {
+    return new \Slim\Flash\Messages();
+});
 $app = AppFactory::createFromContainer($container);
+// AppFactory::setContainer($container);
+// $app = AppFactory::create();
 $app->addErrorMiddleware(true, true, true);
 
-// приложение объектом класса Slim\App
-// $app = AppFactory::create();
+// Doctrine ORM
+// $repo = new App\UserRepository(); # Хранилище объектов
+// $user = new User();
+// $user->setName($newUsername);
+// $entityManager->persist($user);
+// $entityManager->flush();
+// $repo->find($entity['id']); // $entity
+// $repo->all(); // [$entity, $entity2] // Извлечение всех сущностей
 
-$app->get('/users/{id}', function ($request, $response, $args) {
-    $params = ['id' => $args['id'], 'nickname' => 'user-' . $args['id']];
-    //  путь  относительно базовой директории для шаблонов, заданной на этапе конфигурации
-    // $this доступен внутри анонимной функции благодаря https://php.net/manual/ru/closure.bindto.php
-    // $this в Slim  контейнер зависимостей
-    return $this->get('renderer')->render($response, 'users/show.phtml', $params);
-});
+$app->get('/users', function (Request $request, Response $response) {
+    $jsonUsers = file_get_contents(__DIR__ . '/../storage/users.json');
+    $users = json_decode($jsonUsers, true);
 
-$app->get('/courses', function ($request, $response) use ($courses) {
+    $messages = $this->get('flash')->getMessages();
+
+    $params = ['users' => $users, 'flash' => $messages];
+    return $this->get('renderer')->render($response, 'users/index.phtml', $params);
+})->setName('users');
+
+$app->post('/users', function (Request $request, Response $response) {
+    $validator = new Validator();
+    $user = $request->getParsedBodyParam('user');
+    $errors = $validator->validate($user);
+
+    if (count($errors) === 0) {
+        // $repo->save($user);
+        if (!file_exists(__DIR__ . '/../storage/users.json')) {
+            file_put_contents(__DIR__ . '/../storage/users.json', json_encode([]));
+        }
+
+        $jsonUsers = file_get_contents(__DIR__ . '/../storage/users.json');
+        $users = json_decode($jsonUsers, true);
+        $user['id'] = count($users) + 1;
+        $users[] = $user;
+
+        file_put_contents(__DIR__ . '/../storage/users.json', json_encode($users));
+
+        $this->get('flash')->addMessage('success', 'User was added');
+        return $response->withRedirect('/users', 302);
+        return $response->withRedirect("/user/{$user['id']}");
+    }
+    
     $params = [
-        'courses' => $courses
+        'user' => $user,
+        'errors' => $errors
     ];
-    return $this->get('renderer')->render($response, 'courses/index.phtml', $params);
+    return $this->get('renderer')->render($response, "users/new.phtml", $params);
 });
 
-$app->post('/users', function ($request, $response) {
-    $name = 'page';
-    $defaultValue = 1;
-    $page = $request->getQueryParam($name, $defaultValue);
-    $per = $request->getQueryParam('per', 10);
-    return $response;
-});
+$app->get('/users/new', function (Request $request, Response $response) {
+    $params = [
+        'user' => ['name' => '', 'email' => '', 'password' => '', 'passwordConfirmation' => '', 'city' => ''],
+        'errors' => []
+    ];
+    return $this->get('renderer')->render($response, "users/new.phtml", $params);
+})->setName('users/new');
 
-$app->get('/courses/{name}', function ($request, $response, array $args) use ($courses) {
-    $slug = $args['name'];
-    $course = $courses[$slug];
-    return $response->write("<h1>{$course->name}</h1>")
-      ->write("<div>{$course->body}</div>");
-});
+$app->get('/users/{id}', function (Request $request, Response $response, $args) {
+    $jsonUsers = file_get_contents(__DIR__ . '/../storage/users.json');
+    $users = json_decode($jsonUsers, true);
+
+    $filteredUsers = array_filter($users, fn($user) => $user['id'] === (int) $args['id']);
+    $user = reset($filteredUsers);
+
+    if (!$user) {
+        return $response->withStatus(404)->write('Пользователь не найден');
+    }
+    $params = ['user' => $user];
+
+    return $this->get('renderer')->render($response, 'users/show.phtml', $params);
+})->setName('user');
 
 $app->run();

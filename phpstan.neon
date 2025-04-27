@@ -6,3 +6,4 @@ parameters:
     ignoreErrors:
         - identifier: argument.type
         - identifier: method.nonObject
+        - identifier: missingType.iterableValue
