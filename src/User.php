@@ -4,15 +4,11 @@ namespace Page\Analyzer;
 
 class User
 {
-    private string $username;
-    private string $phone;
-    private ?int $id;
-
-    public function __construct(string $username, string $phone, ?int $id = null)
-    {
-        $this->username = $username;
-        $this->phone = $phone;
-        $this->id = $id;
+    public function __construct(
+        private string $username,
+        private string $phone,
+        private ?int $id = null
+    ) {
     }
 
     public function getUsername(): string

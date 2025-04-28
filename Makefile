@@ -2,8 +2,13 @@ install:
 	composer install
 
 # -t меняет корневую директорую — место поиска index.php. помещать в нее только то что открыть напрямую из браузера
-start:
+startDev:
 	php -S localhost:8080 -t public public/index.php
+
+PORT ?= 8000
+# запуск приложения на проде
+start:
+	php -S 0.0.0.0:$(PORT) -t public public/index.php
 
 console:
 	composer exec --verbose psysh

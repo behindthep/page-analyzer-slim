@@ -1,4 +1,7 @@
-<form action="/users/<?= $user['id'] ?>" method="post">
+<h2>Удалить пользователя</h2>
+
+<form action="/users/<?= htmlspecialchars($user['id']) ?>" method="post">
   <input type="hidden" name="_METHOD" value="DELETE">
-  <input type="submit" value="Remove">
+  <p>Вы уверены, что хотите удалить пользователя <?= htmlspecialchars($user['name']) ?>?</p>
+  <input type="submit" value="Удалить">
 </form>

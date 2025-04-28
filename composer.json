@@ -37,7 +37,8 @@
     "symfony/string": "^7.2",
     "symfony/security-csrf": "^7.2",
     "symfony/form": "^7.2",
-    "kris/laravel-form-builder": "^1.54"
+    "kris/laravel-form-builder": "^1.54",
+    "slim/http": "^1.4"
   },
   "require-dev": {
     "psy/psysh": "@stable",
