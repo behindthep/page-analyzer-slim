@@ -1,7 +1,7 @@
-<h2>Пользователь</h2>
-
-<?php foreach ($user as $key => $value): ?>
-  <div>
-      <?= htmlspecialchars($key) ?>: <?= htmlspecialchars($value) ?>
-  </div>
-<?php endforeach ?>
+<p>Hello, <?= htmlspecialchars($user['nickname']) ?>!</p>
+<p>Your ID is <?= htmlspecialchars($id) ?></p>
+<?php if (!empty($flash)): ?>
+<p style="color: green"><?= $flash['success'][0]?></p>
+<?php endif; ?>
+<p><a href="/users/<?= $id ?>/edit">Edit user</a></p>
+<p><a href="/users">Back to users list</a></p>

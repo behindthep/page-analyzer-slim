@@ -1,76 +1,28 @@
 <h1>Users</h1>
 
-<p style="color: green;">
-    <?php if (!empty($flash['success'])): ?>
-        <?= htmlspecialchars($flash['success'][0]) ?>
-    <?php endif; ?>
-</p>
-
-<?php if (isset($_SESSION['user'])): ?>
-    <form action="/logout" method="post">
-        <button type="submit">Logout</button>
-    </form>
-<?php else: ?>
-    <h2>Login</h2>
-    <?php if (!empty($flash['error'])): ?>
-        <p style="color: red;"><?= htmlspecialchars($flash['error'][0]) ?></p>
-    <?php endif; ?>
-    <form action="/login" method="post">
-        <label for="email">Email:</label>
-        <input type="email" id="email" name="user[email]" required>
-        
-        <label for="password">Password:</label>
-        <input type="password" id="password" name="user[password]" required>
-        
-        <button type="submit">Login</button>
-    </form>
-<?php endif; ?>
-
-<p>
-    <a href="/users/new">Add new user</a>
-</p>
-
-<form action="/users" method="get">
-    <input type="text" name="search" placeholder="Search by name">
-    <button type="submit">Search</button>
+<?php if (isset($_SESSION['isAdmin'])): ?>
+<form action="/logout" method="post">
+    <input type="hidden" name="_METHOD" value="DELETE">
+    <input type="submit" value="Logout">
 </form>
-
-<hr>
-
-<?php if (empty($users)): ?>
-    <p>Nothing to display</p>
-<?php else: 
-    $cities = [
-        '3' => 'Москва',
-        '13' => 'Пенза',
-        '399' => 'Томск'
-    ]; ?>
-    <table>
-        <thead>
-            <tr>
-                <th>ID</th>
-                <th>Name</th>
-                <th>Email</th>
-                <th>City</th>
-                <th>Actions</th>
-            </tr>
-        </thead>
-        <tbody>
-            <?php foreach ($users as $user): ?>
-                <tr>
-                    <td><?= htmlspecialchars($user['id']) ?></td>
-                    <td><a href="/users/<?= $user['id'] ?>"><?= htmlspecialchars($user['name']) ?></a></td>
-                    <td><?= htmlspecialchars($user['email']) ?></td>
-                    <td><?= htmlspecialchars($cities[$user['city']] ?? 'Unknown') ?></td>
-                    <td>
-                        <a href="/users/<?= $user['id'] ?>/edit">Edit</a>
-                        <form action="/users/<?= $user['id'] ?>" method="post" style="display: inline;">
-                            <input type="hidden" name="_METHOD" value="DELETE">
-                            <input type="submit" value="Remove">
-                        </form>
-                    </td>
-                </tr>
-            <?php endforeach; ?>
-        </tbody>
-    </table>
 <?php endif; ?>
+
+<?php if (!empty($flash)): ?>
+<p style="color: green"><?= $flash['success'][0]?></p>
+<?php endif; ?>
+<p><a href="/users/new">Add new user</a></p>
+<div>
+  <form action="/users" method="get">
+    <input type="search" name="term" value="<?= htmlspecialchars($term) ?>" />
+    <button type="submit">Search</button>
+  </form>
+</div>
+<hr>
+<?php if (empty($users)): ?>
+<p>Nothing to display, sorry. :(</p>
+<?php endif; ?>
+<ul>
+  <?php foreach ($users as $id => $user): ?>
+    <li><a href="/users/<?= htmlspecialchars($id) ?>"><?= htmlspecialchars($user['nickname']) ?></a></li>
+  <?php endforeach; ?>
+</ul>

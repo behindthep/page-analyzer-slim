@@ -14,7 +14,7 @@
   },
   "autoload": {
     "psr-4": {
-      "Page\\Analyzer\\": "src"
+      "Page\\Analyzer\\": "src/"
     },
     "files": [
       "src/connect.php"
@@ -26,22 +26,22 @@
     }
   },
   "require": {
+    "php" : ">=8.1",
+    "ext-mbstring": "*",
+    "slim/slim": "^4.9",
+    "slim/psr7": "^1.7",
+    "slim/http": "^1.4",
+    "slim/php-view": "^3.4",
+    "php-di/php-di": "^7.0",
+    "slim/flash": "^0.4.0",
     "illuminate/collections": "^12.0",
     "nesbot/carbon": "^3.9",
-    "slim/slim": "^4.14",
-    "slim/psr7": "^1.7",
-    "slim/php-view": "^3.4",
-    "slim/flash": "^0.4.0",
-    "guzzlehttp/psr7": "^2.7",
-    "php-di/php-di": "^7.0",
     "symfony/string": "^7.2",
     "symfony/security-csrf": "^7.2",
     "symfony/form": "^7.2",
-    "kris/laravel-form-builder": "^1.54",
-    "slim/http": "^1.4"
+    "kris/laravel-form-builder": "^1.54"
   },
   "require-dev": {
-    "psy/psysh": "@stable",
     "symfony/var-dumper": "^7.2",
     "phpunit/phpunit": "^11.5",
     "squizlabs/php_codesniffer": "*",

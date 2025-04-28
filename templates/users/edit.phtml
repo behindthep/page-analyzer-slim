@@ -1,36 +1,31 @@
-<form action="/users/<?= htmlspecialchars($user['id']) ?>" method="post">
+<h1>Edit User</h1>
+<hr>
+<form action="/users/<?= $id ?>" method="post">
     <input type="hidden" name="_METHOD" value="PATCH">
     <div>
-        <label>
-            Имя *
-            <input type="text" name="user[name]" value="<?= htmlspecialchars($user['name'] ?? ''); ?>">
+        <label for="user-nickname">
+        Nickname:
+        <input type="text" id="user-nickname" name="user[nickname]" value="<?= htmlspecialchars($user['nickname'] ?? '') ?>" required>
         </label>
-        <?php if (isset($errors['name'])): ?>
-            <div><?= $errors['name'] ?></div>
+        <?php if (isset($errors['nickname'])): ?>
+            <div><?= $errors['nickname'] ?></div>
         <?php endif ?>
     </div>
     <div>
-        <label>
-            Email *
-            <input type="email" name="user[email]" value="<?= htmlspecialchars($user['email'] ?? ''); ?>">
+        <label for="user-email">
+        Email:
+        <input type="text" id="user-email" name="user[email]" value="<?= htmlspecialchars($user['email'] ?? '') ?>" required>
         </label>
-        <?php if (isset($errors['email'])): ?>
-            <div><?= $errors['email'] ?></div>
-        <?php endif ?>
     </div>
     <div>
-        <label>
-            Город *
-            <select name="user[city]">
-                <option value="">Выберите</option>
-                <option <?= (isset($user['city']) && $user['city'] === '3') ? 'selected' : '' ?> value="3">Москва</option>
-                <option <?= (isset($user['city']) && $user['city'] === '13') ? 'selected' : '' ?> value="13">Пенза</option>
-                <option <?= (isset($user['city']) && $user['city'] === '399') ? 'selected' : '' ?> value="399">Томск</option>
-            </select>
-        </label>
-        <?php if (isset($errors['city'])): ?>
-            <div><?= $errors['city'] ?></div>
-        <?php endif ?>
+        <button type="submit" title="Submit form">Update</button>
     </div>
-    <input type="submit" value="Обновить">
 </form>
+
+<h2>Delete user?</h2>
+<form action="/users/<?= $id ?>" method="post">
+    <input type="hidden" name="_METHOD" value="DELETE">
+    <input type="submit" value="Remove">
+</form>
+
+<p><a href="/users">Back to users list</a></p>

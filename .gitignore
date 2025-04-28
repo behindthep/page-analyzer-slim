@@ -1,4 +1,8 @@
 /vendor/
+users.json
+.vscode
+database.sqlite
+
 logs
 *.swo
 *.swp
@@ -8,4 +12,4 @@ coverage.xml
 .env
 .idea
 .DS_Store
-.vscode
+

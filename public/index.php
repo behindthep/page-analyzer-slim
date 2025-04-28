@@ -1,17 +1,32 @@
 <?php
-namespace Page\Analyzer;
-
-use DI\Container;
-use Slim\Factory\AppFactory;
-use Slim\Middleware\MethodOverrideMiddleware;
-use Psr\Http\Message\ServerRequestInterface as Request;
-use Psr\Http\Message\ResponseInterface as Response;
-use Psr\Http\Message\ResponseInterface;
-use Psr\Http\Server\RequestHandlerInterface as RequestHandler;
 
 require_once __DIR__ . '/../vendor/autoload.php';
 
+use Psr\Http\Message\ServerRequestInterface as Request;
+use Psr\Http\Message\ResponseInterface;
+use Psr\Http\Server\RequestHandlerInterface as RequestHandler;
+
+use Page\Analyzer\Car;
+use Page\Analyzer\CarRepository;
+use Page\Analyzer\CarValidator;
+use Slim\Factory\AppFactory;
+use Slim\Middleware\MethodOverrideMiddleware;
+use DI\Container;
+use Page\Analyzer\UserValidator;
+
 session_start();
+
+const ADMIN_EMAIL = 'admin@hexlet.io';
+
+function getUsers($request)
+{
+    return json_decode($request->getCookieParam('users') ?? '', true);
+}
+
+function filterUsersByName($users, $term)
+{
+    return array_filter($users, fn($user) => str_contains($user['nickname'], $term) !== false);
+}
 
 $container = new Container();
 
@@ -23,22 +38,24 @@ $container->set('flash', function () {
     return new \Slim\Flash\Messages();
 });
 
+$container->set(\PDO::class, function () {
+    $conn = new \PDO('sqlite:database.sqlite');
+    $conn->setAttribute(\PDO::ATTR_DEFAULT_FETCH_MODE, \PDO::FETCH_ASSOC);
+    return $conn;
+});
+
+$initFilePath = implode('/', [dirname(__DIR__), 'init.sql']);
+$initSql = file_get_contents($initFilePath);
+$container->get(\PDO::class)->exec($initSql);
+
 $app = AppFactory::createFromContainer($container);
-// AppFactory::setContainer($container);
-// $app = AppFactory::create();
-$app->addErrorMiddleware(true, true, true);
-$app->add(MethodOverrideMiddleware::class);
 
 $router = $app->getRouteCollector()->getRouteParser();
 
-// Doctrine ORM
-// $repo = new App\UserRepository(); # Хранилище объектов
-// $user = new User();
-// $user->setName($newUsername);
-// $entityManager->persist($user);
-// $entityManager->flush();
-// $repo->find($entity['id']); // $entity
-// $repo->all(); // [$entity, $entity2] // Извлечение всех сущностей
+$app->addErrorMiddleware(true, true, true);
+$app->add(MethodOverrideMiddleware::class);
+
+# --- Middlewars
 
 $logMiddleware = function (Request $request, RequestHandler $handler): ResponseInterface {
     error_log("Request: {$request->getMethod()} {$request->getUri()}");
@@ -75,7 +92,7 @@ $afterMiddleware = function (Request $request, RequestHandler $handler) {
 
 $authMiddleware = function (Request $request, RequestHandler $handler) use ($router, $app): ResponseInterface {
 
-    if (!isset($_SESSION['user'])) {
+    if (!isset($_SESSION['car'])) {
         $currentUri = $request->getUri()->getPath();
 
         if ($currentUri !== '/login') {
@@ -89,206 +106,308 @@ $authMiddleware = function (Request $request, RequestHandler $handler) use ($rou
 
 $app->add($authMiddleware);
 
-$app->get('/', function (Request $request, Response $response, $args) {
-    $response->getBody()->write("Welcome!");
-    return $response;
+# ---
+
+$app->get('/', function ($request, $response) use ($router) {
+    if (isset($_SESSION['isAdmin'])) {
+        return $response->withRedirect($router->urlFor('users.index'));
+    }
+
+    $messages = $this->get('flash')->getMessages();
+    $params = [
+        'email' => '',
+        'flash' => $messages ?? []
+    ];
+
+    return $this->get('renderer')->render($response, 'home.phtml', $params);
+})->setName('home');
+
+$app->post('/login', function ($request, $response) use ($router) {
+    $email = $request->getParsedBodyParam('email');
+
+    if ($email === ADMIN_EMAIL) {
+        $_SESSION['isAdmin'] = true;
+
+        return $response->withRedirect($router->urlFor('users.index'));
+    }
+
+    $this->get('flash')->addMessage('error', 'Access Denied!');
+
+    return $response->withRedirect($router->urlFor('home'));
 });
 
-$app->get('/users', function (Request $request, Response $response) {
-    // $repository = new App\UserRepository();
-    // $users = $repository->all();
+$app->delete('/logout', function ($request, $response) use ($router) {
+        session_destroy();
 
-    $cookies = $request->getCookieParams();
-    $jsonUsers = $cookies['users'] ?? json_encode([]);
-    $users = json_decode($jsonUsers, true);
+        return $response->withRedirect($router->urlFor('home'));
+});
+
+$app->get('/users', function ($request, $response) use ($router) {
+    if (!isset($_SESSION['isAdmin'])) {
+        $this->get('flash')->addMessage('error', 'Access Denied! Please login!');
+
+        return $response->withRedirect($router->urlFor('home'));
+    }
+
+    $term = $request->getQueryParam('term') ?? '';
+    $users = getUsers($request) ?? [];
+    $usersList = isset($term) ? filterUsersByName($users, $term) : $users;
 
     $messages = $this->get('flash')->getMessages();
 
-    // пэйджинг
+    $params = [
+      'users' => $usersList,
+      'term' => $term,
+      'flash' => $messages
+    ];
 
-    $params = ['users' => $users, 'flash' => $messages];
     return $this->get('renderer')->render($response, 'users/index.phtml', $params);
-})->setName('users');
+})->setName('users.index');
 
-$app->post('/users', function (Request $request, Response $response) use ($router) {
-    // $repo = new App\UserRepository();
-    $user = $request->getParsedBody()['user'] ?? [];
-    $validator = new Validator();
-    $errors = $validator->validate($user);
+$app->post('/users', function ($request, $response) use ($router) {
+    $users = getUsers($request);
+    $userData = $request->getParsedBodyParam('user');
+
+    $validator = new UserValidator();
+    $errors = $validator->validate($userData);
 
     if (count($errors) === 0) {
-        $cookies = $request->getCookieParams();
-        $jsonUsers = $cookies['users'] ?? json_encode([]);
-        $users = json_decode($jsonUsers, true);
-        $user['id'] = count($users) + 1;
-        $users[] = $user;
+        $id = uniqid();
+        $users[$id] = $userData;
 
-        // $repo->save($user);
-        
-        $this->get('flash')->addMessage('success', 'User has been created');
-        
         $encodedUsers = json_encode($users);
-        $url = $router->urlFor('users');
 
-        return $response
-            ->withHeader('Set-Cookie', "users={$encodedUsers}; Path=/")
-            ->withHeader('Location', $url)
-            ->withStatus(302);
+        $this->get('flash')->addMessage('success', 'User was added successfully');
+
+        return $response->withHeader('Set-Cookie', "users={$encodedUsers};path=/")
+            ->withRedirect($router->urlFor('users.index'));
     }
-    
-    $params = ['user' => $user, 'errors' => $errors];
 
-    $response = $response->withStatus(422);
-    return $this->get('renderer')->render($response, "users/new.phtml", $params);
-});
-
-$app->get('/users/new', function (Request $request, Response $response) {
     $params = [
-        'user' => ['name' => '', 'email' => '', 'password' => '', 'passwordConfirmation' => '', 'city' => ''],
+        'userData' => $userData,
+        'errors' => $errors
+    ];
+
+    return $this->get('renderer')->render($response->withStatus(422), 'users/new.phtml', $params);
+})->setName('users.store');
+
+$app->get('/users/new', function ($request, $response) use ($router){
+    if (!isset($_SESSION['isAdmin'])) {
+        $this->get('flash')->addMessage('error', 'Access Denied! Please login!');
+
+        return $response->withRedirect($router->urlFor('home'));
+    }
+
+    $params = [
+        'userData' => [],
         'errors' => []
     ];
-    return $this->get('renderer')->render($response, "users/new.phtml", $params);
-})->setName('newUser');
 
-$app->get('/users/{id}', function (Request $request, Response $response, array $args) {
-    $id = (int) $args['id'];
-    // $repository = new App\UserRepository();
-    // $user = $repository->find($id);
+    return $this->get('renderer')->render($response, 'users/new.phtml', $params);
+})->setName('users.create');
 
-    $cookies = $request->getCookieParams();
-    $jsonUsers = $cookies['users'] ?? json_encode([]);
-    $users = json_decode($jsonUsers, true);
+$app->get('/courses/{id}', function ($request, $response, array $args) {
+    $id = $args['id'];
+    return $response->write("Course id: {$id}");
+})->setName('courses.show');
 
-    $userIndex = array_search($id, array_column($users, 'id'));
+$app->get('/users/{id}', function ($request, $response, $args) use ($router) {
+    if (!isset($_SESSION['isAdmin'])) {
+        $this->get('flash')->addMessage('error', 'Access Denied! Please login!');
 
-    if ($userIndex === false) {
-        $response->getBody()->write('Page not found');
-        return $response->withStatus(404);
+        return $response->withRedirect($router->urlFor('home'));
     }
 
-    $user = $users[$userIndex];
+    $id = $args['id'];
+    $users = getUsers($request);
 
-    $params = ['user' => $user];
+    if (!array_key_exists($id, $users)) {
+        return $response->write('Page not found')->withStatus(404);
+    }
+
+    $messages = $this->get('flash')->getMessages();
+
+    $params = [
+        'id' => $id,
+        'user' => $users[$id],
+        'flash' => $messages
+    ];
 
     return $this->get('renderer')->render($response, 'users/show.phtml', $params);
-})->setName('user');
+})->setName('users.show');
 
-$app->get('/users/{id}/edit', function (Request $request, Response $response, array $args) {
-    // $repo = new App\UserRepository();
-    $id = (int) $args['id'];
-    // $user = $repo->find($id);
+$app->get('/users/{id}/edit', function ($request, $response, $args) use ($router) {
+    if (!isset($_SESSION['isAdmin'])) {
+        $this->get('flash')->addMessage('error', 'Access Denied! Please login!');
 
-    $cookies = $request->getCookieParams();
-    $jsonUsers = $cookies['users'] ?? json_encode([]);
-    $users = json_decode($jsonUsers, true);
-
-    $userIndex = array_search($id, array_column($users, 'id'));
-
-    if ($userIndex === false) {
-        $response->getBody()->write('Page not found');
-        return $response->withStatus(404);
+        return $response->withRedirect($router->urlFor('home'));
     }
 
-    $user = $users[$userIndex];
-    
-    $params = ['user' => $user, 'errors' => []];
+    $messages = $this->get('flash')->getMessages();
+    $id = $args['id'];
+    $users = getUsers($request);
+    $userData = $users[$id];
+    $params = [
+        'id' => $id,
+        'userData' => $userData,
+        'errors' => [],
+        'flash' => $messages
+    ];
+
     return $this->get('renderer')->render($response, 'users/edit.phtml', $params);
-})->setName('editUser');
+})->setName('users.edit');
 
-$app->patch('/users/{id}', function (Request $request, Response $response, array $args) use ($router)  {
-    // $repo = new App\UserRepository();
-    $id = (int) $args['id'];
-    // $user = $repo->find($id);
+$app->patch('/users/{id}', function ($request, $response, $args) use ($router) {
+    $id = $args['id'];
+    $users = getUsers($request);
+    $user = $users[$id];
+    $userData = $request->getParsedBodyParam('user');
 
-    $data = $request->getParsedBody()['user'] ?? [];
-
-    $cookies = $request->getCookieParams();
-    $jsonUsers = $cookies['users'] ?? json_encode([]);
-    $users = json_decode($jsonUsers, true);
-
-    $userIndex = array_search($id, array_column($users, 'id'));
-
-    if ($userIndex === false) {
-        $response->getBody()->write('Page not found');
-        return $response->withStatus(404);
-    }
-
-    $user = $users[$userIndex];
-
-    $validator = new Validator();
-    $errors = $validator->validate($data);
+    $validator = new UserValidator();
+    $errors = $validator->validate($userData);
 
     if (count($errors) === 0) {
-        $users[$userIndex]['name'] = $data['name'];
-        $users[$userIndex]['email'] = $data['email'];
-        $users[$userIndex]['city'] = $data['city'];
+        $user['nickname'] = $userData['nickname'];
+        $user['email'] = $userData['email'];
+        $users[$id] = $user;
 
-        $response = $response->withHeader('Set-Cookie', "users=" . json_encode($users) . "; Path=/");
+        $encodedUsers = json_encode($users);
 
-        $this->get('flash')->addMessage('success', 'User has been updated');
-        // $repo->save($user);
-        $url = $router->urlFor('users');
-        return $response->withHeader('Location', $url)->withStatus(302);
+        $this->get('flash')->addMessage('success', "User was updated successfully");
+
+        return $response->withHeader('Set-Cookie', "users={$encodedUsers};path=/")
+            ->withRedirect($router->urlFor('users.show', $args));
     }
 
-    $params = ['user' => $users[$userIndex], 'errors' => $errors];
+    $params = [
+        'id' => $id,
+        'userData' => $userData,
+        'errors' => $errors
+    ];
 
-    $response = $response->withStatus(422);
-    return $this->get('renderer')->render($response, 'users/edit.phtml', $params);
+    return $this->get('renderer')->render($response->withStatus(422), 'users/edit.phtml', $params);
 });
 
-$app->delete('/users/{id}', function (Request $request, Response $response, array $args) use ($router) {
-    // $repo = new App\UserRepository();
-    $id = (int) $args['id'];
-    // $repo->destroy($id);
+$app->delete('/users/{id}', function ($request, $response, $args) use ($router) {
+    $id = $args['id'];
+    $users = getUsers($request);
+    unset($users[$id]);
 
-    $cookies = $request->getCookieParams();
-    $jsonUsers = $cookies['users'] ?? json_encode([]);
-    $users = json_decode($jsonUsers, true);
+    $encodedUsers = json_encode($users);
 
-    $users = array_values(array_filter($users, fn($user) => $user['id'] !== $id));
+    $this->get('flash')->addMessage('success', "User was deleted successfully");
 
-    $response = $response->withHeader('Set-Cookie', "users=" . json_encode($users) . "; Path=/");
-
-    $this->get('flash')->addMessage('success', 'User has been deleted');
-    $url = $router->urlFor('users');
-    return $response->withHeader('Location', $url)->withStatus(302);
+    return $response->withHeader('Set-Cookie', "users={$encodedUsers};path=/")
+        ->withRedirect($router->urlFor('users.index'));
 });
 
-$app->get('/login', function (Request $request, Response $response) {
-    $flashMessages = $this->get('flash')->getMessages();
-    $data = $request->getParsedBody()['user'] ?? [];
-    $email = $data['email'] ?? '';
+$app->get('/cars', function ($request, $response) {
+    $carRepository = $this->get(CarRepository::class);
+    $cars = $carRepository->getEntities();
 
-    return $this->get('renderer')->render($response, 'login.phtml', [
-        'email' => $email,
-        'flash' => $flashMessages
-    ]);
-})->setName('login');
+    $messages = $this->get('flash')->getMessages();
 
-$app->post('/login', function (Request $request, Response $response) {
-    $data = $request->getParsedBody()['user'] ?? [];
-    $email = $data['email'] ?? '';
-    $password = $data['password'] ?? '';
+    $params = [
+      'cars' => $cars,
+      'flash' => $messages
+    ];
 
-    if ($email === 'test@mail.ru' && $password === '12345') {
-        $_SESSION['user'] = $email; // Сохраняем информацию о пользователе в сессии
-        return $response->withHeader('Location', '/users')->withStatus(302);
+    return $this->get('renderer')->render($response, 'cars/index.phtml', $params);
+})->setName('cars.index');
+
+$app->post('/cars', function ($request, $response) use ($router) {
+    $carRepository = $this->get(CarRepository::class);
+    $carData = $request->getParsedBodyParam('car');
+
+    $validator = new CarValidator();
+    $errors = $validator->validate($carData);
+
+    if (count($errors) === 0) {
+        $car = Car::fromArray([$carData['make'], $carData['model']]);
+        $carRepository->save($car);
+        $this->get('flash')->addMessage('success', 'Car was added successfully');
+        return $response->withRedirect($router->urlFor('cars.index'));
     }
 
-    // Если вход не удался, возвращаем на страницу входа с ошибкой и передаем введенные данные
-    $flashMessages = $this->get('flash')->getMessages();
-    $flashMessages['error'][] = 'Invalid email or password';
-    
-    return $this->get('renderer')->render($response, 'login.phtml', [
-        'email' => $email,
-        'flash' => $flashMessages
-    ]);
-});
+    $params = [
+        'car' => $carData,
+        'errors' => $errors
+    ];
 
-$app->post('/logout', function (Request $request, Response $response) {
-    unset($_SESSION['user']);
-    return $response->withHeader('Location', '/')->withStatus(302);
+    return $this->get('renderer')->render($response->withStatus(422), 'cars/new.phtml', $params);
+})->setName('cars.store');
+
+$app->get('/cars/new', function ($request, $response) {
+    $params = [
+        'car' => new Car(),
+        'errors' => []
+    ];
+
+    return $this->get('renderer')->render($response, 'cars/new.phtml', $params);
+})->setName('cars.create');
+
+$app->get('/cars/{id}', function ($request, $response, $args) {
+    $carRepository = $this->get(CarRepository::class);
+    $id = $args['id'];
+    $car = $carRepository->find($id);
+
+    if (is_null($car)) {
+        return $response->write('Page not found')->withStatus(404);
+    }
+
+    $messages = $this->get('flash')->getMessages();
+
+    $params = [
+        'car' => $car,
+        'flash' => $messages
+    ];
+
+    return $this->get('renderer')->render($response, 'cars/show.phtml', $params);
+})->setName('cars.show');
+
+$app->get('/cars/{id}/edit', function ($request, $response, $args) {
+    $carRepository = $this->get(CarRepository::class);
+    $messages = $this->get('flash')->getMessages();
+    $id = $args['id'];
+    $car = $carRepository->find($id);
+
+    $params = [
+        'car' => $car,
+        'errors' => [],
+        'flash' => $messages
+    ];
+
+    return $this->get('renderer')->render($response, 'cars/edit.phtml', $params);
+})->setName('cars.edit');
+
+$app->patch('/cars/{id}', function ($request, $response, $args) use ($router) {
+    $carRepository = $this->get(CarRepository::class);
+    $id = $args['id'];
+
+    $car = $carRepository->find($id);
+
+    if (is_null($car)) {
+        return $response->write('Page not found')->withStatus(404);
+    }
+
+    $carData = $request->getParsedBodyParam('car');
+    $validator = new CarValidator();
+    $errors = $validator->validate($carData);
+
+    if (count($errors) === 0) {
+        $car->setMake($carData['make']);
+        $car->setModel($carData['model']);
+        $carRepository->save($car);
+        $this->get('flash')->addMessage('success', "Car was updated successfully");
+        return $response->withRedirect($router->urlFor('cars.show', $args));
+    }
+
+    $params = [
+        'car' => $car,
+        'errors' => $errors
+    ];
+
+    return $this->get('renderer')->render($response->withStatus(422), 'cars/edit.phtml', $params);
 });
 
 $app->run();
