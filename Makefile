@@ -7,11 +7,11 @@ setup:
 	composer install
 
 lint:
-	composer exec --verbose phpcs -- src tests
+	composer exec --verbose phpcs -- src tests public templates
 	composer exec --verbose phpstan
 
 lint-fix:
-	composer exec --verbose phpcbf -- src tests
+	composer exec --verbose phpcbf -- src tests public templates
 
 test:
 	composer exec --verbose phpunit tests

@@ -26,14 +26,21 @@ class CarRepository
         return $cars;
     }
 
+    // Принцип создания методов для работы с базой одинаковый:
     public function find(int $id): ?Car
     {
+        // 1) Описываем шаблон запроса
         $sql = "SELECT * FROM cars WHERE id = ?";
+        // 2) Формируем стейтмент
         $stmt = $this->conn->prepare($sql);
+        // 3) Делаем подстановки
+        // 4) Выполняем запрос
         $stmt->execute([$id]);
+        // 5) Собираем результат
         if ($row = $stmt->fetch()) {
             $car = Car::fromArray([$row['make'], $row['model']]);
             $car->setId($row['id']);
+            // 6) Возвращаем ответ
             return $car;
         }
 
@@ -47,6 +54,14 @@ class CarRepository
         } else {
             $this->create($car);
         }
+    }
+
+    public function delete(Car $car): void
+    {
+        $sql = "DELETE FROM cars WHERE id = ?";
+        $stmt = $this->conn->prepare($sql);
+        $id = $car->getId();
+        $stmt->execute([$id]);
     }
 
     private function update(Car $car): void

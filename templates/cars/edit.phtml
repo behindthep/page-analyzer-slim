@@ -1,31 +1,44 @@
-<h1>Edit car</h1>
-<hr>
-<form action="/cars/<?= $car->getId() ?>" method="post">
-    <input type="hidden" name="_METHOD" value="PATCH">
-    <div>
-        <label for="car-make">
-        Make:
-        <input type="text" id="car-make" name="car[make]" value="<?= htmlspecialchars($car->getMake() ?? '') ?>" required>
-        </label>
-        <?php if (isset($errors['make'])): ?>
-            <div><?= $errors['make'] ?></div>
-        <?php endif ?>
-    </div>
-    <div>
-        <label for="car-model">
-        Email:
-        <input type="text" id="car-model" name="car[model]" value="<?= htmlspecialchars($car->getModel() ?? '') ?>" required>
-        </label>
-    </div>
-    <div>
-        <button type="submit" title="Submit form">Update</button>
-    </div>
-</form>
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <title>Edit car</title>
+</head>
+<body>
+    <div class="container">
+    <h1>Edit car</h1>
 
-<h2>Delete car?</h2>
-<form action="/cars/<?= $id ?>" method="post">
-    <input type="hidden" name="_METHOD" value="DELETE">
-    <input type="submit" value="Remove">
-</form>
+    <hr>
 
-<p><a href="/users">Back to cars list</a></p>
+    <form action="/cars/<?= $car->getId() ?>" method="post">
+        <input type="hidden" name="_METHOD" value="PATCH">
+        <div>
+            <label for="car-make">
+            Make:
+            <input type="text" id="car-make" name="car[make]" value="<?= htmlspecialchars($car->getMake() ?? '') ?>" required>
+            </label>
+            <?php if (isset($errors['make'])): ?>
+                <div><?= $errors['make'] ?></div>
+            <?php endif ?>
+        </div>
+        <div>
+            <label for="car-model">
+            Email:
+            <input type="text" id="car-model" name="car[model]" value="<?= htmlspecialchars($car->getModel() ?? '') ?>" required>
+            </label>
+        </div>
+        <div>
+            <button type="submit" title="Submit form">Update</button>
+        </div>
+    </form>
+
+    <h2>Delete car?</h2>
+    <form action="/cars/<?= $car->getId() ?>" method="post" onsubmit="return confirm('Are you sure you want to delete this car?');">
+        <input type="hidden" name="_METHOD" value="DELETE">
+        <input type="submit" value="Remove">
+    </form>
+
+    <p><a href="/cars">Back to cars list</a></p>
+    </div>
+</body>
+</html>

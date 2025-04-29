@@ -1,15 +1,3 @@
-/vendor/
-users.json
+vendor/
 .vscode
 database.sqlite
-
-logs
-*.swo
-*.swp
-*.cache
-build
-coverage.xml
-.env
-.idea
-.DS_Store
-

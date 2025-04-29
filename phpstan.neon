@@ -4,6 +4,5 @@ parameters:
         - src
         - tests
     ignoreErrors:
-        - identifier: argument.type
         - identifier: method.nonObject
         - identifier: missingType.iterableValue
