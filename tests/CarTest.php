@@ -5,7 +5,7 @@ namespace Php\Package\Tests;
 use PHPUnit\Framework\TestCase;
 use Page\Analyzer\Car;
 
-class UserTest extends TestCase
+class CarTest extends TestCase
 {
     private Car $car;
 

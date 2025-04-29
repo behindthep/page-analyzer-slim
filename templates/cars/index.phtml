@@ -16,22 +16,23 @@
         <?php endif; ?>
 
         <?php if (!empty($flash)): ?>
-        <p style="color: green"><?= $flash['success'][0]?></p>
+            <p style="color: green"><?= $flash['success'][0]?></p>
         <?php endif; ?>
 
         <p><a href="/cars/new">Add new car</a></p>
 
         <div>
             <form action="/cars" method="get">
-            <input type="search" name="term" value="<?= htmlspecialchars($term) ?>" />
-            <button type="submit">Search</button>
+                <label for="term">Find a mark:</label>
+                <input type="search" name="term" id="term" value="<?= htmlspecialchars($term) ?>" />
+                <button type="submit">Search</button>
             </form>
         </div>
 
         <hr>
 
         <?php if (empty($cars)): ?>
-        <p>Nothing to display.</p>
+            <p>Nothing to display.</p>
         <?php endif; ?>
 
         <ul>

@@ -11,7 +11,9 @@
         <?php if (!empty($flash)): ?>
             <p style="color: red"><?= $flash['error'][0]?></p>
         <?php endif; ?>
+
         <p>admin@project.io</p>
+        
         <form action="/login" method="post">
             <input type="text" name="email" value="<?= htmlspecialchars($email) ?>">
             <input type="submit" value="Login">

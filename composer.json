@@ -15,10 +15,7 @@
   "autoload": {
     "psr-4": {
       "Page\\Analyzer\\": "src/"
-    },
-    "files": [
-      "src/connect.php"
-    ]
+    }
   },
   "autoload-dev": {
     "psr-4": {

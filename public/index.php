@@ -2,13 +2,10 @@
 
 require_once __DIR__ . '/../vendor/autoload.php';
 
-use Psr\Http\Message\ServerRequestInterface as Request;
-use Psr\Http\Message\ResponseInterface;
-use Psr\Http\Server\RequestHandlerInterface as RequestHandler;
-
 use Page\Analyzer\Car;
 use Page\Analyzer\CarRepository;
 use Page\Analyzer\CarValidator;
+use Page\Analyzer\CarFilter;
 use Slim\Factory\AppFactory;
 use Slim\Middleware\MethodOverrideMiddleware;
 use DI\Container;
@@ -44,39 +41,6 @@ $router = $app->getRouteCollector()->getRouteParser();
 
 $app->addErrorMiddleware(true, true, true);
 $app->add(MethodOverrideMiddleware::class);
-
-$logMiddleware = function (Request $request, RequestHandler $handler): ResponseInterface {
-    error_log("Request: {$request->getMethod()} {$request->getUri()}");
-
-    // Передаем управление дальше
-    return $handler->handle($request);
-};
-
-$beforeMiddleware = function (Request $request, RequestHandler $handler) use ($app) {
-    $id = $request->getQueryParams()['id'] ?? null;
-
-    if (!$id) {
-        $response = $app->getResponseFactory()->createResponse();
-        $response->getBody()->write('Missing id parameter');
-        return $response->withStatus(400);
-    }
-
-    return $handler->handle($request);
-};
-
-$afterMiddleware = function (Request $request, RequestHandler $handler) {
-    // Передаем управление дальше
-    $response = $handler->handle($request);
-
-    $response = $response->withHeader('X-Custom-Header', 'value');
-
-    return $response;
-};
-
-// Первой выполнится последняя добавленная logMiddleware
-$app->add($afterMiddleware);
-// $app->add($beforeMiddleware);
-$app->add($logMiddleware);
 
 $app->get('/', function ($request, $response) use ($router) {
     if (isset($_SESSION['isAdmin'])) {
@@ -119,13 +83,14 @@ $app->get('/cars', function ($request, $response) use ($router) {
         return $response->withRedirect($router->urlFor('home'));
     }
 
-    $term = $request->getQueryParam('term') ?? '';
     // запросить объект репозитория из контейнера
     $carRepository = $this->get(CarRepository::class);
     // контейнер видит, CarRepository нуждается в PDO и создает экземпляр, передав ему соединение
     $cars = $carRepository->getEntities();
 
-    $carsList = isset($term) ? array_filter($cars, fn($car) => str_contains($car->getMake(), $term) !== false) : $cars;
+    $term = $request->getQueryParam('term') ?? '';
+    $filter = new CarFilter();
+    $carsList = isset($term) ? $filter->filterCarsByMark($cars, $term) : $cars;
 
     $messages = $this->get('flash')->getMessages();
 
@@ -208,10 +173,10 @@ $app->get('/cars/{id}/edit', function ($request, $response, $args) use ($router)
     }
 
     $carRepository = $this->get(CarRepository::class);
-    $messages = $this->get('flash')->getMessages();
     $id = $args['id'];
     $car = $carRepository->find($id);
 
+    $messages = $this->get('flash')->getMessages();
     $params = [
         'car' => $car,
         'errors' => [],
@@ -224,7 +189,6 @@ $app->get('/cars/{id}/edit', function ($request, $response, $args) use ($router)
 $app->patch('/cars/{id}', function ($request, $response, $args) use ($router) {
     $carRepository = $this->get(CarRepository::class);
     $id = $args['id'];
-
     $car = $carRepository->find($id);
 
     if (is_null($car)) {
@@ -240,7 +204,7 @@ $app->patch('/cars/{id}', function ($request, $response, $args) use ($router) {
         $car->setModel($carData['model']);
         $carRepository->save($car);
         $this->get('flash')->addMessage('success', "Car was updated successfully");
-        return $response->withRedirect($router->urlFor('cars.show', $args));
+        return $response->withRedirect($router->urlFor('cars.index', $args));
     }
 
     $params = [
@@ -254,7 +218,6 @@ $app->patch('/cars/{id}', function ($request, $response, $args) use ($router) {
 $app->delete('/cars/{id}', function ($request, $response, $args) use ($router) {
     $carRepository = $this->get(CarRepository::class);
     $id = $args['id'];
-
     $car = $carRepository->find($id);
 
     if (is_null($car)) {
@@ -262,7 +225,6 @@ $app->delete('/cars/{id}', function ($request, $response, $args) use ($router) {
     }
 
     $carRepository->delete($car);
-
     $this->get('flash')->addMessage('success', "Car was deleted successfully");
 
     return $response->withRedirect($router->urlFor('cars.index', $args));
