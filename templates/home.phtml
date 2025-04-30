@@ -2,22 +2,30 @@
 <html lang="en">
 <head>
     <meta charset="UTF-8">
-    <title>Login</title>
+    <title>Url Analyzer</title>
 </head>
 <body>
     <div class="container">
-        <h1>Login</h1>
+        <h1>Url Analyzer</h1>
+        <p>Проверяйте сайты на SEO пригодность https://vk.com</p>
+                
+        <form action="/urls" method="post">
+            <div>
+                <label for="url-name">
+                    <input type="text" id="url-name" name="url[name]" value="<?= htmlspecialchars($url->getName() ?? '') ?>" required>
+                </label>
 
-        <?php if (!empty($flash)): ?>
-            <p style="color: red"><?= $flash['error'][0]?></p>
-        <?php endif; ?>
+                <?php if (isset($errors['name'])): ?>
+                    <div><?= $errors['name'] ?></div>
+                <?php endif ?>
+            </div>
 
-        <p>admin@project.io</p>
-        
-        <form action="/login" method="post">
-            <input type="text" name="email" value="<?= htmlspecialchars($email) ?>">
-            <input type="submit" value="Login">
+            <div>
+                <button type="submit" title="Check url">Check</button>
+            </div>
         </form>
+
+        <p><a href="/urls">List</a></p>
     </div>
 </body>
 </html>

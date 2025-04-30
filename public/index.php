@@ -2,17 +2,17 @@
 
 require_once __DIR__ . '/../vendor/autoload.php';
 
-use Page\Analyzer\Car;
-use Page\Analyzer\CarRepository;
-use Page\Analyzer\CarValidator;
-use Page\Analyzer\CarFilter;
+use Page\Analyzer\Url;
+use Page\Analyzer\UrlRepository;
+use Page\Analyzer\UrlValidator;
+use Page\Analyzer\Check;
+use Page\Analyzer\CheckRepository;
+use Page\Analyzer\SeoChecker;
 use Slim\Factory\AppFactory;
 use Slim\Middleware\MethodOverrideMiddleware;
 use DI\Container;
 
 session_start();
-
-const ADMIN_EMAIL = 'admin@project.io';
 
 $container = new Container();
 
@@ -26,9 +26,13 @@ $container->set('flash', function () {
 
 $container->set(\PDO::class, function () {
     $conn = new \PDO('sqlite:database.sqlite');
-    // $conn = new \PDO('localhost', 'page-analyzer', 'alex', 1111);
+    // $conn = new \PDO('localhost', 'url-analyzer', 'alex', 1111);
     $conn->setAttribute(\PDO::ATTR_DEFAULT_FETCH_MODE, \PDO::FETCH_ASSOC);
     return $conn;
+});
+
+$container->set(SeoChecker::class, function () {
+    return new SeoChecker();
 });
 
 $initFilePath = implode('/', [dirname(__DIR__), 'init.sql']);
@@ -42,192 +46,104 @@ $router = $app->getRouteCollector()->getRouteParser();
 $app->addErrorMiddleware(true, true, true);
 $app->add(MethodOverrideMiddleware::class);
 
-$app->get('/', function ($request, $response) use ($router) {
-    if (isset($_SESSION['isAdmin'])) {
-        return $response->withRedirect($router->urlFor('cars.index'));
-    }
-
-    $messages = $this->get('flash')->getMessages();
+$app->get('/', function ($request, $response) {
     $params = [
-        'email' => '',
-        'flash' => $messages ?? []
+        'url' => new Url()
     ];
 
     return $this->get('renderer')->render($response, 'home.phtml', $params);
 })->setName('home');
 
-$app->post('/login', function ($request, $response) use ($router) {
-    $email = $request->getParsedBodyParam('email');
-
-    if ($email === ADMIN_EMAIL) {
-        $_SESSION['isAdmin'] = true;
-
-        return $response->withRedirect($router->urlFor('cars.index'));
-    }
-
-    $this->get('flash')->addMessage('error', 'Access Denied!');
-
-    return $response->withRedirect($router->urlFor('home'));
-});
-
-$app->delete('/logout', function ($request, $response) use ($router) {
-        session_destroy();
-
-        return $response->withRedirect($router->urlFor('home'));
-});
-
-$app->get('/cars', function ($request, $response) use ($router) {
-    if (!isset($_SESSION['isAdmin'])) {
-        $this->get('flash')->addMessage('error', 'Access Denied! Please login!');
-
-        return $response->withRedirect($router->urlFor('home'));
-    }
-
+$app->get('/urls', function ($request, $response) {
     // запросить объект репозитория из контейнера
-    $carRepository = $this->get(CarRepository::class);
-    // контейнер видит, CarRepository нуждается в PDO и создает экземпляр, передав ему соединение
-    $cars = $carRepository->getEntities();
-
-    $term = $request->getQueryParam('term') ?? '';
-    $filter = new CarFilter();
-    $carsList = isset($term) ? $filter->filterCarsByMark($cars, $term) : $cars;
-
-    $messages = $this->get('flash')->getMessages();
+    $urlRepository = $this->get(UrlRepository::class);
+    // контейнер видит, urlRepository нуждается в PDO и создает экземпляр, передав ему соединение
+    $urls = $urlRepository->getEntities();
 
     $params = [
-      'cars' => $carsList,
-      'term' => $term,
-      'flash' => $messages
+      'urls' => $urls
     ];
 
-    return $this->get('renderer')->render($response, 'cars/index.phtml', $params);
-})->setName('cars.index');
+    return $this->get('renderer')->render($response, 'urls/index.phtml', $params);
+})->setName('urls.index');
 
-$app->post('/cars', function ($request, $response) use ($router) {
-    $carRepository = $this->get(CarRepository::class);
-    $carData = $request->getParsedBodyParam('car');
+$app->post('/urls', function ($request, $response) use ($router) {
+    $urlRepository = $this->get(UrlRepository::class);
+    $urlData = $request->getParsedBodyParam('url');
 
-    $validator = new CarValidator();
-    $errors = $validator->validate($carData);
+    $validator = new UrlValidator();
+    $errors = $validator->validate($urlData);
 
-    if (count($errors) === 0) {
-        $car = Car::fromArray([$carData['make'], $carData['model']]);
-        $carRepository->save($car);
-        $this->get('flash')->addMessage('success', 'Car was added successfully');
-        return $response->withRedirect($router->urlFor('cars.index'));
+    if (count($errors) === 0) {   
+        $existingUrl = $urlRepository->findByName($urlData['name']);
+
+        if ($existingUrl) {
+            $this->get('flash')->addMessage('success', 'Url already exists');
+
+            return $response->withRedirect($router->urlFor('urls.show', ['id' => $existingUrl->getId()]));
+        } 
+
+        $url = new Url();
+        $url->setName($urlData['name']);
+        $urlRepository->save($url);
+
+        $this->get('flash')->addMessage('success', 'Url was added successfully');
+
+        return $response->withRedirect($router->urlFor('urls.show', ['id' => $url->getId()]));
     }
 
     $params = [
-        'car' => $carData,
+        'url' => $urlData,
         'errors' => $errors
     ];
 
-    return $this->get('renderer')->render($response->withStatus(422), 'cars/new.phtml', $params);
-})->setName('cars.store');
+    return $this->get('renderer')->render($response->withStatus(422), 'home.phtml', $params);
+})->setName('urls.store');
 
-$app->get('/cars/new', function ($request, $response) use ($router) {
-    if (!isset($_SESSION['isAdmin'])) {
-        $this->get('flash')->addMessage('error', 'Access Denied! Please login!');
-
-        return $response->withRedirect($router->urlFor('home'));
-    }
-
-    $params = [
-        'car' => new Car(),
-        'errors' => []
-    ];
-
-    return $this->get('renderer')->render($response, 'cars/new.phtml', $params);
-})->setName('cars.create');
-
-$app->get('/cars/{id}', function ($request, $response, $args) use ($router) {
-    if (!isset($_SESSION['isAdmin'])) {
-        $this->get('flash')->addMessage('error', 'Access Denied! Please login!');
-
-        return $response->withRedirect($router->urlFor('home'));
-    }
-
-    $carRepository = $this->get(CarRepository::class);
+$app->get('/urls/{id}', function ($request, $response, $args) {
+    $urlRepository = $this->get(UrlRepository::class);
     $id = $args['id'];
-    $car = $carRepository->find($id);
+    $url = $urlRepository->find($id);
 
-    if (is_null($car)) {
-        return $response->write('Page not found')->withStatus(404);
+    if (is_null($url)) {
+        return $response->write('Url not found')->withStatus(404);
     }
 
     $messages = $this->get('flash')->getMessages();
 
     $params = [
-        'car' => $car,
+        'url' => $url,
         'flash' => $messages
     ];
 
-    return $this->get('renderer')->render($response, 'cars/show.phtml', $params);
-})->setName('cars.show');
+    return $this->get('renderer')->render($response, 'urls/show.phtml', $params);
+})->setName('urls.show');
 
-$app->get('/cars/{id}/edit', function ($request, $response, $args) use ($router) {
-    if (!isset($_SESSION['isAdmin'])) {
-        $this->get('flash')->addMessage('error', 'Access Denied! Please login!');
+$app->post('/checks', function ($request, $response) use ($router) {
+    $checkRepository = $this->get(CheckRepository::class);
+    $urlRepository = $this->get(UrlRepository::class);
+    $seoChecker = $this->get(SeoChecker::class);
+    
+    $urlId = $request->getParsedBodyParam('url_id');
+    $url = $urlRepository->find($urlId);
 
-        return $response->withRedirect($router->urlFor('home'));
+    if (is_null($url)) {
+        return $response->withStatus(404)->write('URL not found');
     }
 
-    $carRepository = $this->get(CarRepository::class);
-    $id = $args['id'];
-    $car = $carRepository->find($id);
+    $seoData = $seoChecker->check($url->getName());
 
-    $messages = $this->get('flash')->getMessages();
-    $params = [
-        'car' => $car,
-        'errors' => [],
-        'flash' => $messages
-    ];
+    $check = new Check();
+    $check->setResponseCode($seoData['response_code']);
+    $check->setHeader($seoData['header']);
+    $check->setTitle($seoData['title']);
+    $check->setDescription($seoData['description']);
+    
+    $checkRepository->save($check);
 
-    return $this->get('renderer')->render($response, 'cars/edit.phtml', $params);
-})->setName('cars.edit');
+    $this->get('flash')->addMessage('success', 'Page was checked successfully');
 
-$app->patch('/cars/{id}', function ($request, $response, $args) use ($router) {
-    $carRepository = $this->get(CarRepository::class);
-    $id = $args['id'];
-    $car = $carRepository->find($id);
-
-    if (is_null($car)) {
-        return $response->write('Page not found')->withStatus(404);
-    }
-
-    $carData = $request->getParsedBodyParam('car');
-    $validator = new CarValidator();
-    $errors = $validator->validate($carData);
-
-    if (count($errors) === 0) {
-        $car->setMake($carData['make']);
-        $car->setModel($carData['model']);
-        $carRepository->save($car);
-        $this->get('flash')->addMessage('success', "Car was updated successfully");
-        return $response->withRedirect($router->urlFor('cars.index', $args));
-    }
-
-    $params = [
-        'car' => $car,
-        'errors' => $errors
-    ];
-
-    return $this->get('renderer')->render($response->withStatus(422), 'cars/edit.phtml', $params);
-});
-
-$app->delete('/cars/{id}', function ($request, $response, $args) use ($router) {
-    $carRepository = $this->get(CarRepository::class);
-    $id = $args['id'];
-    $car = $carRepository->find($id);
-
-    if (is_null($car)) {
-        return $response->write('Page not found')->withStatus(404);
-    }
-
-    $carRepository->delete($car);
-    $this->get('flash')->addMessage('success', "Car was deleted successfully");
-
-    return $response->withRedirect($router->urlFor('cars.index', $args));
-});
+    return $response->withRedirect($router->urlFor('urls.show', ['id' => $url->getId()]));
+})->setName('checks.store');
 
 $app->run();

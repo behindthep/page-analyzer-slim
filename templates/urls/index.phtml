@@ -1,0 +1,35 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <title>Page Analyzer</title>
+</head>
+<body>
+    <div class="container">
+        <h1>Sites</h1>
+        <table>
+            <thead>
+                <tr>
+                    <th scope="col">ID</th>
+                    <th scope="col">Имя</th>
+                    <th scope="col">Последняя проверка</th>
+                    <th scope="col">Код ответа</th>
+                </tr>
+            </thead>
+            <tbody>
+                <?php foreach ($urls as $url): ?>
+                <tr>
+                    <!-- Join/подзапрос написать для получения дата проверки -->
+                    <td><?= htmlspecialchars($url->getId()) ?></td>
+                    <td><a href="/urls/<?= $url->getId() ?>"><?= htmlspecialchars($url->getName()) ?></a></td>
+                    <td><?= htmlspecialchars($url->getLastCheck() ?? '') ?></td>
+                    <td><?= htmlspecialchars($url->getResponseCode() ?? '') ?></td>
+                </tr>
+                <?php endforeach; ?>
+            </tbody>
+        </table>
+
+        <p><a href="/">Back</a></p>
+    </div>
+</body>
+</html>
