@@ -74,14 +74,14 @@ $app->post('/urls', function ($request, $response) use ($router) {
     $validator = new UrlValidator();
     $errors = $validator->validate($urlData);
 
-    if (count($errors) === 0) {   
+    if (count($errors) === 0) {
         $existingUrl = $urlRepository->findByName($urlData['name']);
 
         if ($existingUrl) {
             $this->get('flash')->addMessage('success', 'Url already exists');
 
             return $response->withRedirect($router->urlFor('urls.show', ['id' => $existingUrl->getId()]));
-        } 
+        }
 
         $url = new Url();
         $url->setName($urlData['name']);
@@ -123,7 +123,7 @@ $app->post('/checks', function ($request, $response) use ($router) {
     $checkRepository = $this->get(CheckRepository::class);
     $urlRepository = $this->get(UrlRepository::class);
     $seoChecker = $this->get(SeoChecker::class);
-    
+
     $urlId = $request->getParsedBodyParam('url_id');
     $url = $urlRepository->find($urlId);
 
@@ -138,7 +138,7 @@ $app->post('/checks', function ($request, $response) use ($router) {
     $check->setHeader($seoData['header']);
     $check->setTitle($seoData['title']);
     $check->setDescription($seoData['description']);
-    
+
     $checkRepository->save($check);
 
     $this->get('flash')->addMessage('success', 'Page was checked successfully');

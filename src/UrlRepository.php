@@ -18,7 +18,7 @@ class UrlRepository
                 LEFT JOIN checks c ON u.id = c.url
                 ORDER BY c.created_at DESC";
         $stmt = $this->conn->query($sql);
-        
+
         $results = [];
         while ($row = $stmt->fetch()) {
             $results[] = new UrlCheck(
@@ -42,7 +42,7 @@ class UrlRepository
         // 3) Делаем подстановки
         // 4) Выполняем запрос
         $stmt->execute([$id]);
-        
+
         // 5) Собираем результат
         if ($row = $stmt->fetch()) {
             $url = Url::fromArray([$row['name'], $row['created_at']]);

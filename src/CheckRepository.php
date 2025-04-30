@@ -18,7 +18,9 @@ class CheckRepository
         $stmt = $this->conn->query($sql);
 
         while ($row = $stmt->fetch()) {
-            $check = Check::fromArray([$row['response_code'], $row['header'], $row['title'], $row['description'], $row['created_at']]);
+            $check = Check::fromArray(
+                [$row['response_code'], $row['header'], $row['title'], $row['description'], $row['created_at']]
+            );
             $check->setId($row['id']);
             $check[] = $check;
         }
@@ -31,9 +33,11 @@ class CheckRepository
         $sql = "SELECT * FROM checks WHERE id = ?";
         $stmt = $this->conn->prepare($sql);
         $stmt->execute([$id]);
-        
+
         if ($row = $stmt->fetch()) {
-            $check = Check::fromArray([$row['response_code'], $row['header'], $row['title'], $row['description'], $row['created_at']]);
+            $check = Check::fromArray(
+                [$row['response_code'], $row['header'], $row['title'], $row['description'], $row['created_at']]
+            );
             $check->setId($row['id']);
             $check->setCreatedAt($row['created_at']);
             return $check;
@@ -49,7 +53,8 @@ class CheckRepository
 
     private function create(Check $check): void
     {
-        $sql = "INSERT INTO checks (response_code, header, title, description) VALUES (:response_code, :header, :title, :description)";
+        $sql = "INSERT INTO checks (response_code, header, title, description) 
+        VALUES (:response_code, :header, :title, :description)";
         $stmt = $this->conn->prepare($sql);
 
         $responseCode = $check->getResponseCode();

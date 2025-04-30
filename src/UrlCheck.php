@@ -9,7 +9,7 @@ class UrlCheck
     private ?string $lastCheck = null;
     private ?int $responseCode = null;
 
-    public function __construct($id, $name, $lastCheck = null, $responseCode = null)
+    public function __construct(int $id, string $name, ?string $lastCheck = null, ?int $responseCode = null)
     {
         $this->id = $id;
         $this->name = $name;
@@ -17,22 +17,22 @@ class UrlCheck
         $this->responseCode = $responseCode;
     }
 
-    public function getId()
+    public function getId(): ?int
     {
         return $this->id;
     }
 
-    public function getName()
+    public function getName(): ?string
     {
         return $this->name;
     }
 
-    public function getLastCheck()
+    public function getLastCheck(): ?string
     {
         return $this->lastCheck;
     }
 
-    public function getResponseCode()
+    public function getResponseCode(): ?int
     {
         return $this->responseCode;
     }
