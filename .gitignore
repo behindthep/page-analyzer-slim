@@ -1,6 +1,3 @@
 vendor/
 .vscode
-database.sqlite
-build
 .env
-
