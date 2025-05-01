@@ -22,24 +22,16 @@ class UrlRepository
         return $result;
     }
 
-    // Принцип создания методов для работы с базой одинаковый:
-    public function find(int $id): ?Url
+    public function find(int $id): mixed
     {
-        // 1) Описываем шаблон запроса
         $sql = "SELECT * FROM urls WHERE id = :id";
-        // 2) Формируем стейтмент
         $stmt = $this->conn->prepare($sql);
-        // 3) Делаем подстановки
-        // 4) Выполняем запрос
         $stmt->execute(['id' => $id]);
-
-        // 5) Собираем результат
         $result = $stmt->fetch();
-        // 6) Возвращаем ответ
         return $result;
     }
 
-    public function findByName(string $name): ?Url
+    public function findByName(string $name): ?array
     {
         $sql = "SELECT * FROM urls WHERE name = :name";
         $stmt = $this->conn->prepare($sql);
@@ -49,7 +41,7 @@ class UrlRepository
         return $result ?: null;
     }
 
-    public function save(Url $url): int
+    public function save(string $name): int
     {
         $sql = 'INSERT INTO urls (name, created_at)
                  VALUES (:name, :created_at) RETURNING id';

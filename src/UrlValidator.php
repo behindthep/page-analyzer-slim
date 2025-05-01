@@ -23,6 +23,5 @@ class UrlValidator
         }
 
         return $errors;
-
     }
 }
