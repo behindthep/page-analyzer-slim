@@ -29,7 +29,7 @@ class CheckRepository
         if (empty($urlId)) {
             return null;
         }
-        
+
         $urlIdList = implode(',', array_map(fn($url) => $url['id'], $urlId));
         $sql = "SELECT DISTINCT ON (url_id)
                 url_id AS id, status_code, created_at AS latest_check
