@@ -2,17 +2,23 @@
 
 require_once __DIR__ . '/../vendor/autoload.php';
 
-use Page\Analyzer\Url;
-use Page\Analyzer\UrlRepository;
-use Page\Analyzer\UrlValidator;
-use Page\Analyzer\Check;
-use Page\Analyzer\CheckRepository;
-use Page\Analyzer\SeoChecker;
 use Slim\Factory\AppFactory;
-use Slim\Middleware\MethodOverrideMiddleware;
 use DI\Container;
+use Slim\Exception\HttpNotFoundException;
+use Dotenv\Dotenv;
+use Page\Analyzer\Connection;
+use Page\Analyzer\UrlRepository;
+use Page\Analyzer\CheckRepository;
+use Page\Analyzer\UrlValidator;
+use GuzzleHttp\Client;
+use DiDom\Document;
+use Slim\Middleware\MethodOverrideMiddleware;
 
 session_start();
+
+$dotenv = Dotenv::createImmutable(__DIR__ . '/../');
+$dotenv->safeload();
+$dotenv->required(['DATABASE_URL'])->notEmpty();
 
 $container = new Container();
 
@@ -25,14 +31,8 @@ $container->set('flash', function () {
 });
 
 $container->set(\PDO::class, function () {
-    $conn = new \PDO('sqlite:database.sqlite');
-    // $conn = new \PDO('localhost', 'url-analyzer', 'alex', 1111);
-    $conn->setAttribute(\PDO::ATTR_DEFAULT_FETCH_MODE, \PDO::FETCH_ASSOC);
-    return $conn;
-});
-
-$container->set(SeoChecker::class, function () {
-    return new SeoChecker();
+    $connection = new Connection();
+    return $connection->get();
 });
 
 $initFilePath = implode('/', [dirname(__DIR__), 'init.sql']);
