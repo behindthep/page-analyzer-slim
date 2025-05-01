@@ -17,7 +17,6 @@ class UrlRepository
     {
         $sql = 'SELECT * FROM urls ORDER BY created_at';
         $stmt = $this->conn->query($sql);
-
         $result = $stmt->fetchAll(\PDO::FETCH_ASSOC);
         return $result;
     }
@@ -26,7 +25,9 @@ class UrlRepository
     {
         $sql = "SELECT * FROM urls WHERE id = :id";
         $stmt = $this->conn->prepare($sql);
-        $stmt->execute(['id' => $id]);
+        $stmt->execute(
+            ['id' => $id]
+        );
         $result = $stmt->fetch();
         return $result;
     }
@@ -35,8 +36,9 @@ class UrlRepository
     {
         $sql = "SELECT * FROM urls WHERE name = :name";
         $stmt = $this->conn->prepare($sql);
-        $stmt->execute(['name' => $name]);
-
+        $stmt->execute(
+            ['name' => $name]
+        );
         $result = $stmt->fetch();
         return $result ?: null;
     }

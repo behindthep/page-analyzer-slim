@@ -1,6 +1,6 @@
 <?php
 
- namespace Page\Analyzer;
+namespace Page\Analyzer;
 
 class Connection
 {

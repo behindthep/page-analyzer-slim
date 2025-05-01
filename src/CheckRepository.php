@@ -17,7 +17,6 @@ class CheckRepository
     {
         $sql = 'SELECT * FROM url_checks WHERE url_id = :url_id ORDER BY created_at DESC';
         $stmt = $this->conn->prepare($sql);
-
         $stmt->execute(
             ['url_id' => $urlId]
         );
@@ -32,9 +31,7 @@ class CheckRepository
                 url_id AS id, status_code, created_at AS latest_check
                 FROM url_checks
                 WHERE url_id IN ($urlIdList)
-                ORDER BY url_id, created_at DESC
-                ";
-
+                ORDER BY url_id, created_at DESC";
          $stmt = $this->conn->prepare($sql);
          $stmt->execute();
          $result = $stmt->fetchAll(\PDO::FETCH_ASSOC) ?: null;
@@ -49,9 +46,8 @@ class CheckRepository
         ?string $description
     ): void {
         $sql = 'INSERT INTO url_checks (url_id, status_code, h1, title, description, created_at)
-                 VALUES (:url_id, :status_code, :h1, :title, :description, :created_at)';
+                VALUES (:url_id, :status_code, :h1, :title, :description, :created_at)';
         $stmt = $this->conn->prepare($sql);
-
         $date = Carbon::now();
         $stmt->execute([
             'url_id' => $urlId,

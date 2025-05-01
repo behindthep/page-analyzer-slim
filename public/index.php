@@ -2,18 +2,18 @@
 
 require_once __DIR__ . '/../vendor/autoload.php';
 
-use DI\Container;
 use Slim\Factory\AppFactory;
 use Slim\Exception\HttpNotFoundException;
 use Slim\Exception\HttpMethodNotAllowedException;
 use Slim\Views\PhpRenderer;
+use DI\Container;
 use Dotenv\Dotenv;
-use Page\Analyzer\Connection;
-use Page\Analyzer\UrlRepository;
-use Page\Analyzer\CheckRepository;
-use Page\Analyzer\UrlValidator;
 use GuzzleHttp\Client;
 use DiDom\Document;
+use Page\Analyzer\Connection;
+use Page\Analyzer\UrlValidator;
+use Page\Analyzer\UrlRepository;
+use Page\Analyzer\CheckRepository;
 
 session_start();
 
@@ -47,16 +47,14 @@ $app->get('/', function ($request, $response) {
         'title' => 'Анализатор страниц',
         'currentRoute' => 'home'
     ];
-
     return $this->get('renderer')->render($response, 'index.phtml', $viewData);
 })->setName('home');
 
 $errorMiddleware->setErrorHandler(HttpNotFoundException::class, function ($request, $exception, $displayErrorDetails) {
     $response = new \Slim\Psr7\Response();
     $viewData = [
-        'title' => 'Страница не найдена!'
+        'title' => 'Страница не найдена.'
     ];
-
     return $this->get('renderer')->render($response->withStatus(404), "404.phtml", $viewData);
 });
 
@@ -65,18 +63,17 @@ $errorMiddleware->setErrorHandler(
     function ($request, $exception, $displayErrorDetails) {
         $response = new \Slim\Psr7\Response();
         $viewData = [
-            'title' => 'Ошибка 500!'
+            'title' => 'Ошибка 500.'
         ];
-
         return $this->get('renderer')->render($response->withStatus(500), "500.phtml", $viewData);
     }
 );
 
 $app->get('/urls/{id:[0-9]+}', function ($request, $response, $args) {
-    $urlRepository = $this->get(UrlRepository::class);
-    $checksRepo = new CheckRepository($this->get(\PDO::class));
+    $urlRepository    = new UrlRepository($this->get(\PDO::class));
+    $checksRepository = new CheckRepository($this->get(\PDO::class));
 
-    $id = $args['id'];
+    $id  = $args['id'];
 
     $url = $urlRepository->find((int) $id);
 
@@ -85,98 +82,96 @@ $app->get('/urls/{id:[0-9]+}', function ($request, $response, $args) {
     }
 
     $messages = $this->get('flash')->getMessages();
-    $params = [
-        'url' => $url,
-        'flash' => $messages,
-        'checks' => $checksRepo->getEntities($args['id']),
-        'title' => 'Сайт: ' . $url['name']
+    $params   = [
+        'url'    => $url,
+        'flash'  => $messages,
+        'checks' => $checksRepository->getEntities($args['id']),
+        'title'  => 'Сайт: ' . $url['name']
     ];
 
     return $this->get('renderer')->render($response, 'url.phtml', $params);
 })->setName('url');
 
 $app->get('/urls', function ($request, $response) {
-    $urlRepository = $this->get(UrlRepository::class);
-    $checksRepo = new CheckRepository($this->get(\PDO::class));
-    $urls = $urlRepository->getEntities();
-    $urlsWithLastChecks = $checksRepo->getLastCheck($urls);
+    $urlRepository    = new UrlRepository($this->get(\PDO::class));
+    $checksRepository = new CheckRepository($this->get(\PDO::class));
 
-    $checksCollection = collect($urlsWithLastChecks)->keyBy('id');
+    $urls               = $urlRepository->getEntities();
+    $urlsWithLastChecks = $checksRepository->getLastCheck($urls);
+
+    $checksCollection       = collect($urlsWithLastChecks)->keyBy('id');
     $mergedIdWithLastChecks = collect($urls)->map(function ($url) use ($checksCollection) {
-        $id = $url['id'];
+        $id     = $url['id'];
         $result = isset($checksCollection[$id]) ? array_merge($url, $checksCollection[$id]) : $url;
         return $result;
     })->toArray();
 
     $params = [
-      'urls' => $mergedIdWithLastChecks,
-      'title' => 'Список сайтов',
+      'urls'         => $mergedIdWithLastChecks,
+      'title'        => 'Список сайтов',
       'currentRoute' => 'urls'
     ];
     return $this->get('renderer')->render($response, 'urls.phtml', $params);
 })->setName('urls');
 
 $app->post('/urls', function ($request, $response) use ($router) {
-    $urlRepository = $this->get(UrlRepository::class);
-    $urlData = $request->getParsedBodyParam('url');
-
+    $urlRepository = new UrlRepository($this->get(\PDO::class));
+    
+    $urlData   = $request->getParsedBodyParam('url');
     $validator = new UrlValidator();
-    $errors = $validator->validate($urlData);
+    $errors    = $validator->validate($urlData);
 
     if (count($errors) === 0) {
-        $parsedUrl = parse_url($urlData['name']);
+        $parsedUrl     = parse_url($urlData['name']);
         $normalizedUrl = strtolower("{$parsedUrl['scheme']}://{$parsedUrl['host']}");
-
-        $existingUrl = $urlRepository->findByName($urlData['name']);
+        $existingUrl   = $urlRepository->findByName($urlData['name']);
 
         if ($existingUrl) {
             $this->get('flash')->addMessage('success', 'Страница уже существует');
             $params = ['id' => $existingUrl['id']];
-
             return $response->withRedirect($router->urlFor('url', $params));
         }
 
-        $newUrlId = $urlRepository->save($$normalizedUrl);
-
+        $newUrlId = $urlRepository->save($normalizedUrl);
         $this->get('flash')->addMessage('success', 'Страница успешно добавлена');
-
         $params = ['id' => (string) $newUrlId];
-
         return $response->withRedirect($router->urlFor('url', $params));
     }
 
     $params = [
-        'url' => $urlData,
+        'url'    => $urlData,
         'errors' => $errors
     ];
-    return $this->get('renderer')->render($response->withStatus(422), 'index.phtml', $params);
+    $response = $response->withStatus(422);
+    return $this->get('renderer')->render($response, 'index.phtml', $params);
 })->setName('url_store');
 
 $app->post('/urls/{url_id}/checks', function ($request, $response, $args) use ($router) {
-    $urlId = (int) $args['url_id'];
-    $urlRepository = $this->get(UrlRepository::class);
+    $urlRepository   = $this->get(UrlRepository::class);
     $checkRepository = $this->get(CheckRepository::class);
+
+    $id  = (int) $args['url_id'];
     $client = new Client();
-    $url = $urlRepository->find($urlId);
+    $url    = $urlRepository->find($id);
 
     try {
-        $urlName = $client->get($url["name"]);
+        $urlName    = $client->get($url["name"]);
         $statusCode = $urlName->getStatusCode();
-        $body = (string) $urlName->getBody();
+        $body       = (string) $urlName->getBody();
 
-        $document = new Document($body);
-        $h1 = optional($document->first('h1'))->text() ?? "";
-        $h1 = mb_strlen($h1) > 255 ? mb_strimwidth($h1, 0, 252, "...") : $h1;
-        $title = optional($document->first('title'))->text() ?? "";
+        $document       = new Document($body);
+        $h1             = optional($document->first('h1'))->text() ?? "";
+        $h1             = mb_strlen($h1) > 255 ? mb_strimwidth($h1, 0, 252, "...") : $h1;
+        $title          = optional($document->first('title'))->text() ?? "";
         $descriptionTag = $document->first('meta[name=description]') ?? "";
-        $description = $descriptionTag ? $descriptionTag->getAttribute('content') : "";
-        $checkRepository->addCheck($urlId, $statusCode, $h1, $title, $description);
+        $description    = $descriptionTag ? $descriptionTag->getAttribute('content') : "";
+        $checkRepository->addCheck($id, $statusCode, $h1, $title, $description);
         $this->get('flash')->addMessage('success', 'Страница успешно проверена');
     } catch (\Exception $e) {
         $this->get('flash')->addMessage('error', 'Произошла ошибка при проверке, не удалось подключиться');
     }
 
-    $params = ['id' => (string) $urlId];
+    $params = ['id' => (string) $id];
     return $response->withRedirect($router->urlFor('url', $params));
 })->setName('url_check');
 

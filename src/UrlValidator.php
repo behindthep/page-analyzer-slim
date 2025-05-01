@@ -9,6 +9,7 @@ class UrlValidator
     public function validate(array $data): array
     {
         $errors = [];
+
         if (empty($data['name'])) {
             $errors['name'] = "URL не должен быть пустым";
             return $errors;
