@@ -15,10 +15,10 @@ use Page\Analyzer\CheckRepository;
 use GuzzleHttp\Client;
 use DiDom\Document;
 
-# for what?
+// for what?
 session_start();
 
-# ~?
+// ~?
 $dotenv = Dotenv::createImmutable(__DIR__ . '/../');
 $dotenv->safeload();
 $dotenv->required(['DATABASE_URL'])->notEmpty();
@@ -41,17 +41,17 @@ $container->set(\PDO::class, function () {
 
 $app             = AppFactory::createFromContainer($container);
 
-# ~?
+// ~?
 $errorMiddleware = $app->addErrorMiddleware(true, true, true);
 
-# что это, что делает
+// что это, что делает
 $router          = $app->getRouteCollector()->getRouteParser();
 
 $app->get('/', function ($request, $response) {
     // зачем эти данные на index.phtml
     $viewData = [
-        'title'        => 'Анализатор страниц',
-        'currentRoute' => 'home'
+    'title'        => 'Анализатор страниц',
+    'currentRoute' => 'home'
     ];
     return $this->get('renderer')->render($response, 'index.phtml', $viewData);
 })->setName('home');
@@ -59,7 +59,7 @@ $app->get('/', function ($request, $response) {
 $errorMiddleware->setErrorHandler(HttpNotFoundException::class, function ($request, $exception, $displayErrorDetails) {
     $response = new \Slim\Psr7\Response();
     $viewData = [
-        'title' => 'Страница не найдена'
+    'title' => 'Страница не найдена'
     ];
     return $this->get('renderer')->render($response->withStatus(404), "404.phtml", $viewData);
 });
@@ -78,7 +78,7 @@ $errorMiddleware->setErrorHandler(
 $app->post('/urls', function ($request, $response) use ($router) {
     //прнимает конекшен в конструкторе
     $urlRepository = new UrlRepository($this->get(\PDO::class));
-    
+
     $url       = $request->getParsedBodyParam('url');
     $validator = new UrlValidator();
     $errors    = $validator->validate($url);
@@ -103,8 +103,8 @@ $app->post('/urls', function ($request, $response) use ($router) {
     }
 
     $params = [
-        'url'    => $url,
-        'errors' => $errors
+    'url'    => $url,
+    'errors' => $errors
     ];
     $response = $response->withStatus(422);
     return $this->get('renderer')->render($response, 'index.phtml', $params);
@@ -124,10 +124,10 @@ $app->get('/urls/{id:[0-9]+}', function ($request, $response, $args) {
 
     $messages = $this->get('flash')->getMessages();
     $params   = [
-        'url'    => $url,
-        'flash'  => $messages,
-        'checks' => $checksRepository->getEntities($args['id']),
-        'title'  => 'Сайт: ' . $url['name']
+    'url'    => $url,
+    'flash'  => $messages,
+    'checks' => $checksRepository->getEntities($args['id']),
+    'title'  => 'Сайт: ' . $url['name']
     ];
 
     return $this->get('renderer')->render($response, 'url.phtml', $params);
@@ -142,25 +142,27 @@ $app->get('/urls', function ($request, $response) {
 
     /*
     $collection = collect([
-        ['product_id' => 'prod-100', 'name' => 'Desk']
+    ['product_id' => 'prod-100', 'name' => 'Desk']
     ]);
     $keyed = $collection->keyBy('product_id');
     $keyed->all();
-        [
-            'prod-100' => ['product_id' => 'prod-100', 'name' => 'Desk']
-        ]
+    [
+        'prod-100' => ['product_id' => 'prod-100', 'name' => 'Desk']
+    ]
     */
     $checks             = collect($urlsWithLastChecks)->keyBy('id');
-    $urlsWithLastChecks = collect($urls)->map(function ($url) use ($checks) {
-        $id     = $url['id'];
-        $result = isset($checks[$id]) ? array_merge($url, $checks[$id]) : $url;
-        return $result;
-    })->toArray();
+    $urlsWithLastChecks = collect($urls)->map(
+        function ($url) use ($checks) {
+            $id     = $url['id'];
+            $result = isset($checks[$id]) ? array_merge($url, $checks[$id]) : $url;
+            return $result;
+        }
+    )->toArray();
 
     $params = [
-      'urls'         => $urlsWithLastChecks,
-      'title'        => 'Список сайтов',
-      'currentRoute' => 'urls'
+    'urls'         => $urlsWithLastChecks,
+    'title'        => 'Список сайтов',
+    'currentRoute' => 'urls'
     ];
     return $this->get('renderer')->render($response, 'urls.phtml', $params);
 })->setName('urls');

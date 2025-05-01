@@ -50,13 +50,15 @@ class CheckRepository
                 VALUES (:url_id, :status_code, :h1, :title, :description, :created_at)';
         $stmt = $this->conn->prepare($sql);
         $date = Carbon::now();
-        $stmt->execute([
+        $stmt->execute(
+            [
             'url_id' => $urlId,
             'status_code' => $statusCode,
             'h1' => $h1,
             'title' => $title,
             'description' => $description,
             'created_at' => $date
-        ]);
+            ]
+        );
     }
 }

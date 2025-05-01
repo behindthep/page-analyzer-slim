@@ -33,20 +33,23 @@ class UrlRepository
         //         VALUES (:name, :created_at)";
         $stmt = $this->conn->prepare($sql);
         $date = Carbon::now();
-        $stmt->execute([
+        $stmt->execute(
+            [
             'name' => $name,
             'created_at' => $date
-        ]);
+            ]
+        );
 
         // first (id) single column
-        // значение первого столбца из первой строки результата запроса - значение id, которое было возвращено после вставки.
+        // значение первого столбца из первой строки результата запроса
+        // - значение id, которое было возвращено после вставки.
         $id = $stmt->fetchColumn();
         // $id = $this->conn->lastInsertId();
         // Зачем int?
         return (int) $id;
     }
 
-    public function findById(int $id): ?array # mixed was
+    public function findById(int $id): ?array // mixed was
     {
         $sql = "SELECT * FROM urls WHERE id = :id";
         $stmt = $this->conn->prepare($sql);
