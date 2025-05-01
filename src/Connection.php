@@ -2,18 +2,18 @@
 
 namespace Page\Analyzer;
 
-class Connection
+final class Connection
 {
     private \PDO $pdo;
 
     public function __construct()
     {
         $databaseUrl = $_ENV['DATABASE_URL'];
-        $parsedUrl = parse_url($databaseUrl);
+        $parsedDbUrl = parse_url($databaseUrl);
 
-        $host = $parsedUrl['host'] ?? '';
-        $port = $parsedUrl['port'] ?? '5432';
-        $dbname = ltrim($parsedUrl['path'], '/');
+        $host     = $parsedUrl['host'] ?? '';
+        $port     = $parsedUrl['port'] ?? '5432';
+        $dbname   = ltrim($parsedDbUrl['path'], '/');
         $username = $parsedUrl['user'] ?? '';
         $password = $parsedUrl['pass'] ?? '';
 

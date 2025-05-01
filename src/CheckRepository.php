@@ -34,6 +34,7 @@ class CheckRepository
                 ORDER BY url_id, created_at DESC";
          $stmt = $this->conn->prepare($sql);
          $stmt->execute();
+         // без fetach assoc, оно по дефу тут по идее
          $result = $stmt->fetchAll(\PDO::FETCH_ASSOC) ?: null;
          return $result;
     }
