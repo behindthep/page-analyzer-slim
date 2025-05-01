@@ -1,10 +1,13 @@
 PORT ?= 8000
 
 start:
-	php -S 0.0.0.0:$(PORT) -t public public/index.php
+	PHP_CLI_SERVER_WORKERS=5 php -S 0.0.0.0:$(PORT) -t public
 
 setup:
 	composer install
+
+validate:
+ 	composer validate
 
 lint:
 	composer exec --verbose phpcs -- src tests public templates
