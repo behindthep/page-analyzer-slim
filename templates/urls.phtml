@@ -1,3 +1,4 @@
+<?=$this->fetch('header.phtml', ["currentRoute" => "urls"])?>
 <!DOCTYPE html>
 <html lang="en">
 <head>
@@ -5,9 +6,11 @@
     <title>Page Analyzer</title>
 </head>
 <body>
-    <div class="container">
+<main class="flex-grow-1">
+<div class="container-lg mt-3"> 
         <h1>Sites</h1>
-        <table>
+        <div class="table-responsive">
+        <table class="table table-bordered table-hover text-nowrap" data-test="urls">
             <thead>
                 <tr>
                     <th scope="col">ID</th>
@@ -19,17 +22,19 @@
             <tbody>
                 <?php foreach ($urls as $url): ?>
                 <tr>
-                    <!-- Join/подзапрос написать для получения дата проверки -->
-                    <td><?= htmlspecialchars($url->getId()) ?></td>
-                    <td><a href="/urls/<?= $url->getId() ?>"><?= htmlspecialchars($url->getName()) ?></a></td>
-                    <td><?= htmlspecialchars($url->getLastCheck() ?? '') ?></td>
-                    <td><?= htmlspecialchars($url->getResponseCode() ?? '') ?></td>
+                    <td><?= htmlspecialchars($url['id']) ?></td>
+                    <td><a href="/urls/<?= $url['id'] ?>"><?= htmlspecialchars($url['name']) ?></a></td>
+                    <td><?= htmlspecialchars($url['data']['last_check']) ?></td>
+                    <td><?= htmlspecialchars($url['data']['status_code']) ?></td>
                 </tr>
                 <?php endforeach; ?>
             </tbody>
         </table>
+        </div>
 
         <p><a href="/">Back</a></p>
     </div>
+    </main>
+ <?=$this->fetch('footer.phtml')?>
 </body>
 </html>
