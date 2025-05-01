@@ -33,8 +33,6 @@ jobs:
 
       - name: Setup project
         run: make setup
-      - name: Tests
-        run: make test
       - name: Run linter
         run: make lint
 

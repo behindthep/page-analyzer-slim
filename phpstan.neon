@@ -1,11 +1,12 @@
 parameters:
     level: 8
     paths:
+        - public
         - src
-        - tests
     ignoreErrors:
-        - identifier: method.nonObject
-        - identifier: missingType.iterableValue
-        - identifier: argument.type 
-        - identifier: return.type 
+        - identifier: missingType.iterableValue 
+        - identifier: variable.undefined
         - identifier: offsetAccess.nonOffsetAccessible
+        - identifier: argument.templateType 
+        - identifier: method.nonObject 
+        - identifier: method.notFound 

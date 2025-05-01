@@ -7,6 +7,8 @@
 [![Coverage](https://sonarcloud.io/api/project_badges/measure?project=behindthep_page-analyzer&metric=coverage)](https://sonarcloud.io/summary/new_code?id=behindthep_page-analyzer)
 [![Duplicated Lines (%)](https://sonarcloud.io/api/project_badges/measure?project=behindthep_page-analyzer&metric=duplicated_lines_density)](https://sonarcloud.io/summary/new_code?id=behindthep_page-analyzer)
 
+A site that analyzes specified pages for SEO suitability.
+
 Demo: https://page-analyzer-yvvb.onrender.com/
 
 ## Prerequisites
