@@ -2,9 +2,11 @@
 
 require_once __DIR__ . '/../vendor/autoload.php';
 
-use Slim\Factory\AppFactory;
 use DI\Container;
+use Slim\Factory\AppFactory;
 use Slim\Exception\HttpNotFoundException;
+use Slim\Exception\HttpMethodNotAllowedException;
+use Slim\Views\PhpRenderer;
 use Dotenv\Dotenv;
 use Page\Analyzer\Connection;
 use Page\Analyzer\UrlRepository;
@@ -12,7 +14,6 @@ use Page\Analyzer\CheckRepository;
 use Page\Analyzer\UrlValidator;
 use GuzzleHttp\Client;
 use DiDom\Document;
-use Slim\Middleware\MethodOverrideMiddleware;
 
 session_start();
 
@@ -21,9 +22,10 @@ $dotenv->safeload();
 $dotenv->required(['DATABASE_URL'])->notEmpty();
 
 $container = new Container();
-
 $container->set('renderer', function () {
-    return new \Slim\Views\PhpRenderer(__DIR__ . '/../templates');
+    $render = new PhpRenderer(__DIR__ . '/../templates');
+    $render->setLayout('layout.phtml');
+    return $render;
 });
 
 $container->set('flash', function () {
@@ -35,35 +37,46 @@ $container->set(\PDO::class, function () {
     return $connection->get();
 });
 
-$initFilePath = implode('/', [dirname(__DIR__), 'init.sql']);
-$initSql = file_get_contents($initFilePath);
-$container->get(\PDO::class)->exec($initSql);
-
 $app = AppFactory::createFromContainer($container);
+$errorMiddleware = $app->addErrorMiddleware(true, true, true);
 
 $router = $app->getRouteCollector()->getRouteParser();
 
-$app->addErrorMiddleware(true, true, true);
-$errorMiddleware = $app->addErrorMiddleware(true, true, true);
-$app->add(MethodOverrideMiddleware::class);
-
 $app->get('/', function ($request, $response) {
-    return $this->get('renderer')->render($response, 'index.phtml');
+    $viewData = [
+        'title' => 'Анализатор страниц',
+        'currentRoute' => 'home'
+    ];
+
+    return $this->get('renderer')->render($response, 'index.phtml', $viewData);
 })->setName('home');
 
 $errorMiddleware->setErrorHandler(HttpNotFoundException::class, function ($request, $exception, $displayErrorDetails) {
     $response = new \Slim\Psr7\Response();
-    return $this->get('renderer')->render($response->withStatus(404), "404.phtml");
+    $viewData = [
+        'title' => 'Страница не найдена!'
+    ];
+
+    return $this->get('renderer')->render($response->withStatus(404), "404.phtml", $viewData);
 });
 
-$app->get('/urls/{id}', function ($request, $response, $args) {
+$errorMiddleware->setErrorHandler(
+    HttpMethodNotAllowedException::class,
+    function ($request, $exception, $displayErrorDetails) {
+        $response = new \Slim\Psr7\Response();
+        $viewData = [
+            'title' => 'Ошибка 500!'
+        ];
+
+        return $this->get('renderer')->render($response->withStatus(500), "500.phtml", $viewData);
+    }
+);
+
+$app->get('/urls/{id:[0-9]+}', function ($request, $response, $args) {
     $urlRepository = $this->get(UrlRepository::class);
     $checksRepo = new CheckRepository($this->get(\PDO::class));
-    $id = $args['id'];
 
-    if (!is_numeric($id)) {
-        return $this->get('renderer')->render($response->withStatus(404), "404.phtml",);
-    }
+    $id = $args['id'];
 
     $url = $urlRepository->find((int) $id);
 
@@ -72,35 +85,33 @@ $app->get('/urls/{id}', function ($request, $response, $args) {
     }
 
     $messages = $this->get('flash')->getMessages();
-
     $params = [
         'url' => $url,
         'flash' => $messages,
-        'checks' => $checksRepo->getEntities($args['id'])
+        'checks' => $checksRepo->getEntities($args['id']),
+        'title' => 'Сайт: ' . $url['name']
     ];
 
     return $this->get('renderer')->render($response, 'url.phtml', $params);
 })->setName('url');
 
 $app->get('/urls', function ($request, $response) {
-    // запросить объект репозитория из контейнера
     $urlRepository = $this->get(UrlRepository::class);
-    // контейнер видит, urlRepository нуждается в PDO и создает экземпляр, передав ему соединение
     $checksRepo = new CheckRepository($this->get(\PDO::class));
-
     $urls = $urlRepository->getEntities();
+    $urlsWithLastChecks = $checksRepo->getLastCheck($urls);
 
-    $urlsWithLastChecks = array_map(function ($url) use ($checksRepo) {
-        $lastCheck = $checksRepo->getLastCheck($url['id']);
-        $url['data'] = [
-            'last_check' => $lastCheck['created_at'] ?? '',
-            'status_code' => $lastCheck['status_code'] ?? ''
-        ];
-        return $url;
-    }, $urls);
+    $checksCollection = collect($urlsWithLastChecks)->keyBy('id');
+    $mergedIdWithLastChecks = collect($urls)->map(function ($url) use ($checksCollection) {
+        $id = $url['id'];
+        $result = isset($checksCollection[$id]) ? array_merge($url, $checksCollection[$id]) : $url;
+        return $result;
+    })->toArray();
 
     $params = [
-      'urls' => $urlsWithLastChecks
+      'urls' => $mergedIdWithLastChecks,
+      'title' => 'Список сайтов',
+      'currentRoute' => 'urls'
     ];
     return $this->get('renderer')->render($response, 'urls.phtml', $params);
 })->setName('urls');
@@ -113,7 +124,6 @@ $app->post('/urls', function ($request, $response) use ($router) {
     $errors = $validator->validate($urlData);
 
     if (count($errors) === 0) {
-
         $parsedUrl = parse_url($urlData['name']);
         $normalizedUrl = strtolower("{$parsedUrl['scheme']}://{$parsedUrl['host']}");
 
@@ -144,23 +154,22 @@ $app->post('/urls', function ($request, $response) use ($router) {
 
 $app->post('/urls/{url_id}/checks', function ($request, $response, $args) use ($router) {
     $urlId = (int) $args['url_id'];
-
     $urlRepository = $this->get(UrlRepository::class);
     $checkRepository = $this->get(CheckRepository::class);
     $client = new Client();
-
     $url = $urlRepository->find($urlId);
 
     try {
-        $urlName = $client->get($url['name']);
+        $urlName = $client->get($url["name"]);
         $statusCode = $urlName->getStatusCode();
         $body = (string) $urlName->getBody();
 
         $document = new Document($body);
-        $h1 = optional($document->first('h1'))->text() ?? null;
-        $title = optional($document->first('title'))->text() ?? null;
-        $descriptionTag = $document->first('meta[name=description]') ?? null;
-        $description = $descriptionTag ? $descriptionTag->getAttribute('content') : null;
+        $h1 = optional($document->first('h1'))->text() ?? "";
+        $h1 = mb_strlen($h1) > 255 ? mb_strimwidth($h1, 0, 252, "...") : $h1;
+        $title = optional($document->first('title'))->text() ?? "";
+        $descriptionTag = $document->first('meta[name=description]') ?? "";
+        $description = $descriptionTag ? $descriptionTag->getAttribute('content') : "";
         $checkRepository->addCheck($urlId, $statusCode, $h1, $title, $description);
         $this->get('flash')->addMessage('success', 'Страница успешно проверена');
     } catch (\Exception $e) {
@@ -168,8 +177,7 @@ $app->post('/urls/{url_id}/checks', function ($request, $response, $args) use ($
     }
 
     $params = ['id' => (string) $urlId];
-
-    return $response->withRedirect($router->urlFor('url',  $params));
+    return $response->withRedirect($router->urlFor('url', $params));
 })->setName('url_check');
 
 $app->run();
