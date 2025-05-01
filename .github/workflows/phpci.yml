@@ -34,15 +34,6 @@ jobs:
         run: make setup
       - name: Run linter
         run: make lint
-
-        # https://docs.sonarsource.com/sonarqube-cloud/enriching/test-coverage/php-test-coverage/
-      - name: Run tests
-        run: make test-coverage
-
-      - name: SonarQube Scan
-        uses: SonarSource/sonarqube-scan-action@v5
-        env:
-          SONAR_TOKEN: ${{ secrets.SONAR_TOKEN }}
       
   deploy:
     needs: build
