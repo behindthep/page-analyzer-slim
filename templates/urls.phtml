@@ -1,14 +1,13 @@
-<?=$this->fetch('header.phtml', ["currentRoute" => "urls"])?>
 <!DOCTYPE html>
-<html lang="en">
+<html lang="ru">
 <head>
     <meta charset="UTF-8">
-    <title>Page Analyzer</title>
+    <title>Анализатор страниц</title>
 </head>
 <body>
 <main class="flex-grow-1">
 <div class="container-lg mt-3"> 
-        <h1>Sites</h1>
+        <h1>Сайты</h1>
         <div class="table-responsive">
         <table class="table table-bordered table-hover text-nowrap" data-test="urls">
             <thead>
@@ -24,17 +23,14 @@
                 <tr>
                     <td><?= htmlspecialchars($url['id']) ?></td>
                     <td><a href="/urls/<?= $url['id'] ?>"><?= htmlspecialchars($url['name']) ?></a></td>
-                    <td><?= htmlspecialchars($url['data']['last_check']) ?></td>
-                    <td><?= htmlspecialchars($url['data']['status_code']) ?></td>
+                    <td><?= htmlspecialchars($url['latest_check'] ?? '') ?></td>
+                    <td><?= htmlspecialchars($url['status_code'] ?? '') ?></td>
                 </tr>
                 <?php endforeach; ?>
             </tbody>
         </table>
         </div>
-
-        <p><a href="/">Back</a></p>
     </div>
     </main>
- <?=$this->fetch('footer.phtml')?>
 </body>
 </html>
