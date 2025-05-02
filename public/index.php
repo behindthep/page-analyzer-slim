@@ -129,7 +129,6 @@ $app->get('/urls/{id:[0-9]+}', function ($request, $response, $args) {
     'checks' => $checksRepository->getEntities($args['id']),
     'title'  => 'Сайт: ' . $url['name']
     ];
-
     return $this->get('renderer')->render($response, 'url.phtml', $params);
 })->setName('url');
 
@@ -138,26 +137,28 @@ $app->get('/urls', function ($request, $response) {
     $checksRepository = new CheckRepository($this->get(\PDO::class));
 
     $urls               = $urlRepository->getEntities();
-    $urlsWithLastChecks = $checksRepository->getLastCheck($urls);
+    $urlsWithLastChecks = [];
 
-    /*
-    $collection = collect([
-    ['product_id' => 'prod-100', 'name' => 'Desk']
-    ]);
-    $keyed = $collection->keyBy('product_id');
-    $keyed->all();
-    [
-        'prod-100' => ['product_id' => 'prod-100', 'name' => 'Desk']
-    ]
-    */
-    $checks             = collect($urlsWithLastChecks)->keyBy('id');
-    $urlsWithLastChecks = collect($urls)->map(
-        function ($url) use ($checks) {
+    if (!empty($urls)) {
+        $urlsWithLastChecks = $checkRepository->getLastCheck($urls);
+
+        /**
+         * keyBy('id') making @param field the Key and the collection its Value
+         * @example
+         * $checks = collect([
+         *     ['id' => 1, 'status_code' => 200, latest_check => '2025-05-01 16:00:00']
+         * ])->keyBy('id')->all();
+         * [
+         *     1 => ['id' => 1, 'status_code' => 200, latest_check => '2025-05-01 16:00:00']
+         * ]
+         */
+        $checks             = collect($urlsWithLastChecks)->keyBy('id');
+        $urlsWithLastChecks = collect($urls)->map(function ($url) use ($checks) {
             $id     = $url['id'];
             $result = isset($checks[$id]) ? array_merge($url, $checks[$id]) : $url;
             return $result;
-        }
-    )->toArray();
+        })->toArray();
+    }
 
     $params = [
     'urls'         => $urlsWithLastChecks,

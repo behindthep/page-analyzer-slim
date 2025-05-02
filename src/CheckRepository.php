@@ -26,16 +26,13 @@ class CheckRepository
 
     public function getLastCheck(array $urlId): ?array
     {
-        if (empty($urlId)) {
-            return null;
-        }
-
         $urlIdList = implode(',', array_map(fn($url) => $url['id'], $urlId));
         $sql = "SELECT DISTINCT ON (url_id)
                 url_id AS id, status_code, created_at AS latest_check
                 FROM url_checks
                 WHERE url_id IN ($urlIdList)
                 ORDER BY url_id, created_at DESC";
+
          $stmt = $this->conn->prepare($sql);
          $stmt->execute();
          // без fetach assoc, оно по дефу тут по идее
