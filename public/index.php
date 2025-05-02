@@ -2,29 +2,43 @@
 
 require_once __DIR__ . '/../vendor/autoload.php';
 
-use Dotenv\Dotenv;
-use DI\Container;
-use Slim\Views\PhpRenderer;
-use Page\Analyzer\Connection;
 use Slim\Factory\AppFactory;
+use Slim\Views\PhpRenderer;
 use Slim\Exception\HttpNotFoundException;
 use Slim\Exception\HttpMethodNotAllowedException;
-use Page\Analyzer\UrlRepository;
-use Page\Analyzer\UrlValidator;
-use Page\Analyzer\CheckRepository;
+use DI\Container;
+use Dotenv\Dotenv;
 use GuzzleHttp\Client;
 use DiDom\Document;
+use Page\Analyzer\Connection;
+use Page\Analyzer\TablesInitializer;
+use Page\Analyzer\UrlValidator;
+use Page\Analyzer\UrlRepository;
+use Page\Analyzer\CheckRepository;
 
-// for what?
+/**
+ * for Slim\Flash\Messages
+ */
 session_start();
 
-// ~?
+/**
+ * Dotenv class for working with environment variables
+ * createImmutable() creates an instance of the class with a directory for searching
+ * safeload() loads environment variables from the .env file into $_ENV and $_SERVER without overwriting existing ones
+ */
 $dotenv = Dotenv::createImmutable(__DIR__ . '/../');
 $dotenv->safeload();
 $dotenv->required(['DATABASE_URL'])->notEmpty();
 
+/**
+ * DI container in which the required dependencies are seted
+ */
 $container = new Container();
 $container->set('renderer', function () {
+    /**
+     * PhpRenderer, when it renders a template, such as index.phtml, it captures the output of that template, stores it
+     * in the $content variable (implicitly declared) and inserts that output into layout.phtml
+     */
     $render = new PhpRenderer(__DIR__ . '/../templates');
     $render->setLayout('layout.phtml');
     return $render;
@@ -41,25 +55,40 @@ $container->set(\PDO::class, function () {
 
 $app             = AppFactory::createFromContainer($container);
 
-// ~?
+$app = AppFactory::createFromContainer($container);
+
+/**
+ * adds Middleware for error handling. Middleware - functions that process requests and responses.
+ */
 $errorMiddleware = $app->addErrorMiddleware(true, true, true);
 
-// что это, что делает
-$router          = $app->getRouteCollector()->getRouteParser();
+/**
+ * get an instance of route parser from the application's route collector.
+ * Route parser to generate URLs based on named routes
+ * Generate URL /urls/1 from route url:
+ * @example
+ * $response->withRedirect($router->urlFor('url', ['id' => 1]))
+ */
+$router = $app->getRouteCollector()->getRouteParser();
 
 $app->get('/', function ($request, $response) {
-    // зачем эти данные на index.phtml
+    /**
+     * for use in layout.phtml
+     */
     $viewData = [
-    'title'        => 'Анализатор страниц',
-    'currentRoute' => 'home'
+        'title'        => 'Анализатор страниц',
+        'currentRoute' => 'home'
     ];
     return $this->get('renderer')->render($response, 'index.phtml', $viewData);
 })->setName('home');
 
+/**
+ * Middlewares that handles receiving 404 and 500 status codes in the response
+ */
 $errorMiddleware->setErrorHandler(HttpNotFoundException::class, function ($request, $exception, $displayErrorDetails) {
     $response = new \Slim\Psr7\Response();
     $viewData = [
-    'title' => 'Страница не найдена'
+        'title' => 'Страница не найдена'
     ];
     return $this->get('renderer')->render($response->withStatus(404), "404.phtml", $viewData);
 });
@@ -79,6 +108,10 @@ $app->post('/urls', function ($request, $response) use ($router) {
     //прнимает конекшен в конструкторе
     $urlRepository = new UrlRepository($this->get(\PDO::class));
 
+    /**
+     * in $url an associative array with the name key obtained from the form
+     * allows accessing the entered URL via $url['name']
+     */
     $url       = $request->getParsedBodyParam('url');
     $validator = new UrlValidator();
     $errors    = $validator->validate($url);
@@ -86,25 +119,27 @@ $app->post('/urls', function ($request, $response) use ($router) {
     if (count($errors) === 0) {
         $parsedUrl     = parse_url($url['name']);
         $normalizedUrl = strtolower("{$parsedUrl['scheme']}://{$parsedUrl['host']}");
-        $existingUrl   = $urlRepository->findByName($url['name']);
+        $existingUrl   = $urlRepository->findByName($normalizedUrl);
 
         if ($existingUrl) {
             $this->get('flash')->addMessage('success', 'Страница уже существует');
-            $params = ['id' => $existingUrl['id']];
+            $params = [
+                'id' => $existingUrl['id']
+            ];
             return $response->withRedirect($router->urlFor('url', $params));
         }
 
-        // странно что save возвращяет id - чек php-slim-example
         $id = $urlRepository->save($normalizedUrl);
         $this->get('flash')->addMessage('success', 'Страница успешно добавлена');
-        // зачем Стринг?
-        $params = ['id' => (string) $id];
+        $params = [
+            'id' => (string) $id
+        ];
         return $response->withRedirect($router->urlFor('url', $params));
     }
 
     $params = [
-    'url'    => $url,
-    'errors' => $errors
+        'url'    => $url,
+        'errors' => $errors
     ];
     $response = $response->withStatus(422);
     return $this->get('renderer')->render($response, 'index.phtml', $params);
@@ -124,10 +159,10 @@ $app->get('/urls/{id:[0-9]+}', function ($request, $response, $args) {
 
     $messages = $this->get('flash')->getMessages();
     $params   = [
-    'url'    => $url,
-    'flash'  => $messages,
-    'checks' => $checksRepository->getEntities($args['id']),
-    'title'  => 'Сайт: ' . $url['name']
+        'url'    => $url,
+        'flash'  => $messages,
+        'checks' => $checkRepository->getEntities($args['id']),
+        'title'  => 'Сайт: ' . $url['name']
     ];
     return $this->get('renderer')->render($response, 'url.phtml', $params);
 })->setName('url');
@@ -161,9 +196,9 @@ $app->get('/urls', function ($request, $response) {
     }
 
     $params = [
-    'urls'         => $urlsWithLastChecks,
-    'title'        => 'Список сайтов',
-    'currentRoute' => 'urls'
+        'urls'         => $urlsWithLastChecks,
+        'title'        => 'Список сайтов',
+        'currentRoute' => 'urls'
     ];
     return $this->get('renderer')->render($response, 'urls.phtml', $params);
 })->setName('urls');
@@ -174,29 +209,31 @@ $app->post('/urls/{url_id}/checks', function ($request, $response, $args) use ($
     // $this->get(CheckRepository::class);
 
     $id     = (int) $args['url_id'];
-    $client = new Client();
     $url    = $urlRepository->findById($id);
+    $client = new Client();
 
     try {
-        // делаем get запрос к url и получаем ответ
+        /**
+         * make a GET request with GuzzleHttp Client, by Url and @return response
+         */
         $urlName    = $client->get($url["name"]);
-        // получаем код из ответа
         $statusCode = $urlName->getStatusCode();
-        // получаем тело ответа
         $body       = (string) $urlName->getBody();
 
-        // html парсер
+        /**
+         * DiDom Document - HTML parser
+         *
+         * optional() does't @return error if value ('h1', 'title') is null
+         *
+         * text() @return string (content)
+         *
+         * getAttribute() @return string (attribute content)
+         */
         $document       = new Document($body);
-
-        // $document->first('h1') может быть null, но благодря optional, при этом не возвращяется ошибка
-        // text() возвращяет строку
         $h1             = optional($document->first('h1'))->text() ?? "";
         $normalizedH1   = mb_strlen($h1) > 255 ? mb_strimwidth($h1, 0, 252, "...") : $h1;
-
         $title          = optional($document->first('title'))->text() ?? "";
-
         $descriptionTag = $document->first('meta[name=description]') ?? "";
-        // Getting value of an attribute
         $description    = $descriptionTag ? $descriptionTag->getAttribute('content') : "";
 
         $checkRepository->save($id, $statusCode, $normalizedH1, $title, $description);
@@ -206,8 +243,9 @@ $app->post('/urls/{url_id}/checks', function ($request, $response, $args) use ($
         $this->get('flash')->addMessage('error', 'Произошла ошибка при проверке, не удалось подключиться');
     }
 
-    // зачем (string)?
-    $params = ['id' => (string) $id];
+    $params = [
+        'id' => (string) $id
+    ];
     return $response->withRedirect($router->urlFor('url', $params));
 })->setName('url_check');
 
