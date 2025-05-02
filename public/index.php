@@ -53,7 +53,11 @@ $container->set(\PDO::class, function () {
     return $connection->get();
 });
 
-$app             = AppFactory::createFromContainer($container);
+/**
+ * DI container has access to connection - PDO object
+ * Create an instance of TablesInitializer class from DI container, which passes this connection to the class.
+ */
+$container->get(TablesInitializer::class);
 
 $app = AppFactory::createFromContainer($container);
 
@@ -105,8 +109,7 @@ $errorMiddleware->setErrorHandler(
 );
 
 $app->post('/urls', function ($request, $response) use ($router) {
-    //прнимает конекшен в конструкторе
-    $urlRepository = new UrlRepository($this->get(\PDO::class));
+    $urlRepository = $this->get(UrlRepository::class);
 
     /**
      * in $url an associative array with the name key obtained from the form
@@ -146,8 +149,8 @@ $app->post('/urls', function ($request, $response) use ($router) {
 })->setName('url_store');
 
 $app->get('/urls/{id:[0-9]+}', function ($request, $response, $args) {
-    $urlRepository    = new UrlRepository($this->get(\PDO::class));
-    $checksRepository = new CheckRepository($this->get(\PDO::class));
+    $urlRepository   = $this->get(UrlRepository::class);
+    $checkRepository = $this->get(CheckRepository::class);
 
     $id  = $args['id'];
 
@@ -168,8 +171,8 @@ $app->get('/urls/{id:[0-9]+}', function ($request, $response, $args) {
 })->setName('url');
 
 $app->get('/urls', function ($request, $response) {
-    $urlRepository    = new UrlRepository($this->get(\PDO::class));
-    $checksRepository = new CheckRepository($this->get(\PDO::class));
+    $urlRepository   = $this->get(UrlRepository::class);
+    $checkRepository = $this->get(CheckRepository::class);
 
     $urls               = $urlRepository->getEntities();
     $urlsWithLastChecks = [];
@@ -204,9 +207,8 @@ $app->get('/urls', function ($request, $response) {
 })->setName('urls');
 
 $app->post('/urls/{url_id}/checks', function ($request, $response, $args) use ($router) {
-    $urlRepository   = new UrlRepository($this->get(\PDO::class));
-    $checkRepository = new CheckRepository($this->get(\PDO::class));
-    // $this->get(CheckRepository::class);
+    $urlRepository   = $this->get(UrlRepository::class);
+    $checkRepository = $this->get(CheckRepository::class);
 
     $id     = (int) $args['url_id'];
     $url    = $urlRepository->findById($id);
