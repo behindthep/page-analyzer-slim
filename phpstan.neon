@@ -10,4 +10,4 @@ parameters:
         - identifier: method.nonObject 
         - identifier: method.notFound 
         - identifier: argument.type
-        - identifier: offsetAccess.notFound
+        - identifier: argument.templateType
