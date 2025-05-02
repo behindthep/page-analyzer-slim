@@ -5,7 +5,7 @@
 
 A site that analyzes specified pages for SEO suitability.
 
-Demo: https://page-analyzer-yvvb.onrender.com/
+Demo on Render (suspended): https://page-analyzer-yvvb.onrender.com/
 
 ## Usage
 
