@@ -15,11 +15,15 @@ class CheckRepository
 
     public function getEntities(int $urlId): array
     {
-        $sql = 'SELECT * FROM url_checks WHERE url_id = :url_id ORDER BY created_at DESC';
+        $sql = "SELECT * 
+                FROM url_checks 
+                WHERE url_id = :url_id 
+                ORDER BY created_at DESC";
+
         $stmt = $this->conn->prepare($sql);
-        $stmt->execute(
-            ['url_id' => $urlId]
-        );
+        $stmt->execute([
+            'url_id' => $urlId
+        ]);
         $result = $stmt->fetchAll();
         return $result;
     }
@@ -35,7 +39,6 @@ class CheckRepository
 
          $stmt = $this->conn->prepare($sql);
          $stmt->execute();
-         // без fetach assoc, оно по дефу тут по идее
          $result = $stmt->fetchAll(\PDO::FETCH_ASSOC) ?: null;
          return $result;
     }
@@ -47,19 +50,18 @@ class CheckRepository
         ?string $title,
         ?string $description
     ): void {
-        $sql = 'INSERT INTO url_checks (url_id, status_code, h1, title, description, created_at)
-                VALUES (:url_id, :status_code, :h1, :title, :description, :created_at)';
+        $sql = "INSERT INTO url_checks (url_id, status_code, h1, title, description, created_at)
+                VALUES (:url_id, :status_code, :h1, :title, :description, :created_at)";
+
         $stmt = $this->conn->prepare($sql);
         $date = Carbon::now();
-        $stmt->execute(
-            [
+        $stmt->execute([
             'url_id' => $urlId,
             'status_code' => $statusCode,
             'h1' => $h1,
             'title' => $title,
             'description' => $description,
             'created_at' => $date
-            ]
-        );
+        ]);
     }
 }
