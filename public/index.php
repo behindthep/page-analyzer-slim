@@ -56,7 +56,7 @@ $container->set(\PDO::class, function () {
 /**
  * DI container has access to connection - PDO object
  * Create an instance of TablesInitializer class from DI container, which passes this connection to the class.
- * 
+ *
  * in DI container pass an exemplar of any class that needs dependencies stored in the container
  */
 $container->get(TablesInitializer::class);
