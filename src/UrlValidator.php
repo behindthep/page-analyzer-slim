@@ -6,20 +6,23 @@ use Valitron\Validator;
 
 class UrlValidator
 {
-    public function validate(array $data): array
+    public function validate(array $url): array
     {
         $errors = [];
 
-        if (empty($data['name'])) {
+        if (empty($url['name'])) {
             $errors['name'] = "URL не должен быть пустым";
             return $errors;
         }
 
-        $url = new Validator(['name' => $data['name']]);
-        $url->rule('url', 'name');
-        $url->rule('lengthMax', 'name', 255);
+        $validator = new Validator(['name' => $url['name']]);
+        $validator->rule('url', 'name');
+        $validator->rule('lengthMax', 'name', 255);
 
-        if (!$url->validate()) {
+        /**
+         * personal Valitron\Validator validate()
+         */
+        if (!$validator->validate()) {
             $errors['name'] = 'Некорректный URL';
         }
 
