@@ -214,12 +214,12 @@ $app->post('/urls/{url_id}/checks', function ($request, $response, $args) use ($
 
     $id     = (int) $args['url_id'];
     $url    = $urlRepository->findById($id);
-    $client = new Client();
 
     try {
         /**
          * make a GET request with GuzzleHttp Client, by Url and @return response
          */
+        $client = new Client();
         $urlName    = $client->get($url["name"]);
         $statusCode = $urlName->getStatusCode();
         $body       = (string) $urlName->getBody();
@@ -243,7 +243,7 @@ $app->post('/urls/{url_id}/checks', function ($request, $response, $args) use ($
         $checkRepository->save($id, $statusCode, $normalizedH1, $title, $description);
 
         $this->get('flash')->addMessage('success', 'Страница успешно проверена');
-    } catch (\Exception $e) {
+    } catch (\Guzzle\TransferException $e) {
         $this->get('flash')->addMessage('error', 'Произошла ошибка при проверке, не удалось подключиться');
     }
 
