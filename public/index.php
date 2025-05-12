@@ -243,7 +243,7 @@ $app->post('/urls/{url_id}/checks', function ($request, $response, $args) use ($
         $checkRepository->save($id, $statusCode, $normalizedH1, $title, $description);
 
         $this->get('flash')->addMessage('success', 'Страница успешно проверена');
-    } catch (\Guzzle\TransferException $e) {
+    } catch (\Exception $e) {
         $this->get('flash')->addMessage('error', 'Произошла ошибка при проверке, не удалось подключиться');
     }
 
