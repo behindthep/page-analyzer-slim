@@ -4,6 +4,7 @@ start:
 
 setup:
 	composer install
+	cp -n .env.example .env
 
 validate:
 	composer validate
