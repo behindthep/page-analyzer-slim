@@ -104,9 +104,9 @@ $errorMiddleware->setErrorHandler(
     function ($request, $exception, $displayErrorDetails) {
         $response = new \Slim\Psr7\Response();
         $viewData = [
-            'title' => 'Ошибка 500'
+            'title' => 'Недопустимое действие'
         ];
-        return $this->get('renderer')->render($response->withStatus(500), "500.phtml", $viewData);
+        return $this->get('renderer')->render($response->withStatus(405), "405.phtml", $viewData);
     }
 );
 
