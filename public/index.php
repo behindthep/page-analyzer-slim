@@ -44,6 +44,7 @@ $container->set('renderer', function () {
     return $render;
 });
 
+// Регистрируем в контейнере, что flash будет реализован через \Slim\Flash\Messages
 $container->set('flash', function () {
     return new \Slim\Flash\Messages();
 });
