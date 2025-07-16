@@ -6,7 +6,7 @@ class TablesInitializer
 {
     public function __construct(\PDO $conn)
     {
-        $sqlFilePath = __DIR__ . '/../database.sql';
+        $sqlFilePath = __DIR__ . '/../database/sqlite.sql';
 
         if (!file_exists($sqlFilePath)) {
             throw new \RuntimeException("SQL file not found: $sqlFilePath");

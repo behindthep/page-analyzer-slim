@@ -6,21 +6,11 @@
                 <p class="lead">Бесплатно проверяйте сайты на SEO пригодность</p>
                 <form action="/urls" method="post" class="row">
                     <div class="col-8">
-                        <!-- 
-                        * attribute name=“url[name]” organizes the data into an associative array with the name key and the value of the entered URL when submitting the form
-                        * [
-                        *    'url' => [
-                        *        'name' => 'https://www.example.com'
-                        *    ]
-                        * ]
-                        *
-                        * content of the value attribute allows to save the entered URL so that the form displays the previously entered data (after submitting the form with errors) 
-                        -->
                         <label for="text" class="visually-hidden">Url для проверки</label>
-                        <input 
-                        type="text" 
-                        name="url[name]" 
-                        value="<?= htmlspecialchars($url['name'] ?? '') ?>" 
+                        <input
+                        type="text"
+                        name="url[name]"
+                        value="<?= htmlspecialchars($url['name'] ?? '') ?>"
                         class="form-control form-control-lg <?= !empty($errors) ? 'is-invalid' : '' ?>"
                         placeholder="https://www.example.com"
                         required>

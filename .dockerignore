@@ -1,0 +1,11 @@
+.git
+logs
+tmp
+vendor/
+node_modules/
+.env
+*.sqlite
+.phpunit.result.cache
+/public/hot
+/public/storage
+/storage/*.key

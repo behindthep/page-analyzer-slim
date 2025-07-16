@@ -10,78 +10,53 @@ use DI\Container;
 use Dotenv\Dotenv;
 use GuzzleHttp\Client;
 use DiDom\Document;
-use Page\Analyzer\Connection;
-use Page\Analyzer\TablesInitializer;
-use Page\Analyzer\UrlValidator;
-use Page\Analyzer\UrlRepository;
-use Page\Analyzer\CheckRepository;
+use Page\Analyzer\Connections\ConnectionInterface;
+use Database\Factories\ConnectionFactory;
+use Page\Analyzer\{
+    UrlValidator,
+    UrlRepository,
+    CheckRepository,
+    TablesInitializer
+};
 
-/**
- * for Slim\Flash\Messages
- */
+
 session_start();
 
-/**
- * Dotenv class for working with environment variables
- * createImmutable() creates an instance of the class with a directory for searching
- * safeload() loads environment variables from the .env file into $_ENV and $_SERVER without overwriting existing ones
- */
 $dotenv = Dotenv::createImmutable(__DIR__ . '/../');
 $dotenv->safeload();
 $dotenv->required(['DATABASE_URL'])->notEmpty();
 
-/**
- * DI container in which the required dependencies are seted
- */
 $container = new Container();
+
 $container->set('renderer', function () {
-    /**
-     * PhpRenderer, when it renders a template, such as index.phtml, it captures the output of that template, stores it
-     * in the $content variable (implicitly declared) and inserts that output into layout.phtml
-     */
     $render = new PhpRenderer(__DIR__ . '/../templates');
     $render->setLayout('layout.phtml');
     return $render;
 });
 
-// Регистрируем в контейнере, что flash будет реализован через \Slim\Flash\Messages
+// Регистрируем в контейнере через что (\Slim\Flash\Messages) будет реализовываться конкретный объект (flash)
 $container->set('flash', function () {
     return new \Slim\Flash\Messages();
 });
 
-$container->set(\PDO::class, function () {
-    $connection = new Connection();
-    return $connection->get();
+$container->set(ConnectionInterface::class, function () {
+    $dbType = $_ENV['DB_TYPE'] ?? 'sqlite';
+    return ConnectionFactory::create($dbType);
 });
 
-/**
- * DI container has access to connection - PDO object
- * Create an instance of TablesInitializer class from DI container, which passes this connection to the class.
- *
- * in DI container pass an exemplar of any class that needs dependencies stored in the container
- */
+$container->set(\PDO::class, function ($c) {
+    return $c->get(ConnectionInterface::class)->get();
+});
+
 $container->get(TablesInitializer::class);
 
 $app = AppFactory::createFromContainer($container);
 
-/**
- * adds Middleware for error handling. Middleware - functions that process requests and responses.
- */
 $errorMiddleware = $app->addErrorMiddleware(true, true, true);
 
-/**
- * get an instance of route parser from the application's route collector.
- * Route parser to generate URLs based on named routes
- * Generate URL /urls/1 from route url:
- * @example
- * $response->withRedirect($router->urlFor('url', ['id' => 1]))
- */
 $router = $app->getRouteCollector()->getRouteParser();
 
 $app->get('/', function ($request, $response) {
-    /**
-     * for use in layout.phtml
-     */
     $viewData = [
         'title'        => 'Анализатор страниц',
         'currentRoute' => 'home'
@@ -89,9 +64,7 @@ $app->get('/', function ($request, $response) {
     return $this->get('renderer')->render($response, 'index.phtml', $viewData);
 })->setName('home');
 
-/**
- * Middlewares that handles receiving 404 and 500 status codes in the response
- */
+
 $errorMiddleware->setErrorHandler(HttpNotFoundException::class, function ($request, $exception, $displayErrorDetails) {
     $response = new \Slim\Psr7\Response();
     $viewData = [
@@ -111,13 +84,10 @@ $errorMiddleware->setErrorHandler(
     }
 );
 
+
 $app->post('/urls', function ($request, $response) use ($router) {
     $urlRepository = $this->get(UrlRepository::class);
 
-    /**
-     * in $url an associative array with the name key obtained from the form
-     * allows accessing the entered URL via $url['name']
-     */
     $url       = $request->getParsedBodyParam('url');
     $validator = new UrlValidator();
     $errors    = $validator->validate($url);
@@ -151,6 +121,7 @@ $app->post('/urls', function ($request, $response) use ($router) {
     return $this->get('renderer')->render($response, 'index.phtml', $params);
 })->setName('url_store');
 
+
 $app->get('/urls/{id:[0-9]+}', function ($request, $response, $args) {
     $urlRepository   = $this->get(UrlRepository::class);
     $checkRepository = $this->get(CheckRepository::class);
@@ -173,6 +144,7 @@ $app->get('/urls/{id:[0-9]+}', function ($request, $response, $args) {
     return $this->get('renderer')->render($response, 'url.phtml', $params);
 })->setName('url');
 
+
 $app->get('/urls', function ($request, $response) {
     $urlRepository   = $this->get(UrlRepository::class);
     $checkRepository = $this->get(CheckRepository::class);
@@ -183,16 +155,6 @@ $app->get('/urls', function ($request, $response) {
     if (!empty($urls)) {
         $urlsWithLastChecks = $checkRepository->getLastCheck($urls);
 
-        /**
-         * keyBy('id') making @param field the Key and the collection its Value
-         * @example
-         * $checks = collect([
-         *     ['id' => 1, 'status_code' => 200, latest_check => '2025-05-01 16:00:00']
-         * ])->keyBy('id')->all();
-         * [
-         *     1 => ['id' => 1, 'status_code' => 200, latest_check => '2025-05-01 16:00:00']
-         * ]
-         */
         $checks             = collect($urlsWithLastChecks)->keyBy('id');
         $urlsWithLastChecks = collect($urls)->map(function ($url) use ($checks) {
             $id     = $url['id'];
@@ -209,31 +171,20 @@ $app->get('/urls', function ($request, $response) {
     return $this->get('renderer')->render($response, 'urls.phtml', $params);
 })->setName('urls');
 
+
 $app->post('/urls/{url_id}/checks', function ($request, $response, $args) use ($router) {
     $urlRepository   = $this->get(UrlRepository::class);
     $checkRepository = $this->get(CheckRepository::class);
 
-    $id     = (int) $args['url_id'];
-    $url    = $urlRepository->findById($id);
+    $id  = (int) $args['url_id'];
+    $url = $urlRepository->findById($id);
 
     try {
-        /**
-         * make a GET request with GuzzleHttp Client, by Url and @return response
-         */
-        $client = new Client();
+        $client     = new Client();
         $urlName    = $client->get($url["name"]);
         $statusCode = $urlName->getStatusCode();
         $body       = (string) $urlName->getBody();
 
-        /**
-         * DiDom Document - HTML parser
-         *
-         * optional() does't @return error if value ('h1', 'title') is null
-         *
-         * text() @return string (content)
-         *
-         * getAttribute() @return string (attribute content)
-         */
         $document       = new Document($body);
         $h1             = optional($document->first('h1'))->text() ?? "";
         $normalizedH1   = mb_strlen($h1) > 255 ? mb_strimwidth($h1, 0, 252, "...") : $h1;
@@ -253,5 +204,6 @@ $app->post('/urls/{url_id}/checks', function ($request, $response, $args) use ($
     ];
     return $response->withRedirect($router->urlFor('url', $params));
 })->setName('url_check');
+
 
 $app->run();

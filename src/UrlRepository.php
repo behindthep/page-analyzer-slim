@@ -16,7 +16,7 @@ class UrlRepository
     public function getEntities(): array
     {
         $sql = "SELECT *
-                FROM urls 
+                FROM urls
                 ORDER BY created_at";
 
         $stmt = $this->conn->query($sql);
@@ -27,7 +27,7 @@ class UrlRepository
     public function findById(int $id): ?array
     {
         $sql = "SELECT *
-                FROM urls 
+                FROM urls
                 WHERE id = :id";
 
         $stmt = $this->conn->prepare($sql);
@@ -54,9 +54,6 @@ class UrlRepository
 
     public function save(string $name): int
     {
-        /**
-         * @return id of the inserted record
-         */
         $sql = "INSERT INTO urls (name, created_at)
                 VALUES (:name, :created_at) RETURNING id";
 
@@ -66,9 +63,7 @@ class UrlRepository
             'name' => $name,
             'created_at' => $date
         ]);
-        /**
-         * @return id (the first and only value) of the first column (id)
-         */
+
         $id = $stmt->fetchColumn();
         return (int) $id;
     }

@@ -1,15 +1,29 @@
 # page-analyzer
 
 [![PHP CI](https://github.com/behindthep/page-analyzer/actions/workflows/phpci.yml/badge.svg)](https://github.com/behindthep/page-analyzer/actions)
-[![Maintainability](https://api.codeclimate.com/v1/badges/336c6b9ae0cc0a6297b3/maintainability)](https://codeclimate.com/github/behindthep/page-analyzer/maintainability)
+[![Bugs](https://sonarcloud.io/api/project_badges/measure?project=behindthep_page-analyzer-slim&metric=bugs)](https://sonarcloud.io/summary/new_code?id=behindthep_page-analyzer-slim)
+[![Code Smells](https://sonarcloud.io/api/project_badges/measure?project=behindthep_page-analyzer-slim&metric=code_smells)](https://sonarcloud.io/summary/new_code?id=behindthep_page-analyzer-slim)
+[![Duplicated Lines (%)](https://sonarcloud.io/api/project_badges/measure?project=behindthep_page-analyzer-slim&metric=duplicated_lines_density)](https://sonarcloud.io/summary/new_code?id=behindthep_page-analyzer-slim)
 
-A site that analyzes specified pages for SEO suitability.
+Site-analyzer for SEO suitability of pages.
 
-Demo on Render (suspended): https://page-analyzer-yvvb.onrender.com/
+## Prerequisites
 
-## Usage
+* Linux
+* PHP >=8.2
+* Make
+* Git
+
+## Setup
 
 ```bash
 make setup
+```
+
+## Run linter and Start Server
+
+```bash
+make lint
+
 make start
 ```

@@ -1,8 +1,8 @@
 <?php
 
-namespace Page\Analyzer;
+namespace Page\Analyzer\Connections;
 
-final class Connection
+final class PostgreConnection implements ConnectionInterface
 {
     private \PDO $pdo;
 
@@ -13,9 +13,6 @@ final class Connection
 
         $host     = $parsedDbUrl['host'] ?? '';
         $port     = $parsedDbUrl['port'] ?? '5432';
-        /**
-         * in addition to spaces, ltrim() also removes '\'
-         */
         $dbname   = ltrim($parsedDbUrl['path'], '/');
         $username = $parsedDbUrl['user'] ?? '';
         $password = $parsedDbUrl['pass'] ?? '';

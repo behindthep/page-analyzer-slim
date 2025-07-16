@@ -1,5 +1,6 @@
 {
   "name": "behindthpe/page-analyzer",
+  "version": "0.0.1",
   "type": "project",
   "description": "Page Analyzer",
   "license": "MIT",
@@ -11,7 +12,8 @@
   ],
   "autoload": {
     "psr-4": {
-      "Page\\Analyzer\\": "src/"
+      "Page\\Analyzer\\": "src/",
+      "Database\\Factories\\": "database/factories/"
     }
   },
   "require": {
@@ -29,6 +31,7 @@
     "illuminate/support": "^11.41"
   },
   "require-dev": {
+    "psy/psysh": "@stable",
     "phpstan/phpstan": "^2.1",
     "symfony/var-dumper": "^7.2",
     "squizlabs/php_codesniffer": "*",

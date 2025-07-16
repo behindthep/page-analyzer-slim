@@ -1,0 +1,16 @@
+CREATE TABLE IF NOT EXISTS urls (
+    id INTEGER PRIMARY KEY AUTOINCREMENT,
+    name TEXT UNIQUE NOT NULL,
+    created_at TEXT NOT NULL
+);
+
+CREATE TABLE IF NOT EXISTS url_checks (
+    id INTEGER PRIMARY KEY AUTOINCREMENT,
+    url_id INTEGER NOT NULL,
+    status_code INTEGER NULL,
+    h1 TEXT NULL,
+    title TEXT NULL,
+    description TEXT NULL,
+    created_at TEXT NOT NULL,
+    FOREIGN KEY (url_id) REFERENCES urls(id) ON DELETE CASCADE
+);

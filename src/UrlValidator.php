@@ -19,9 +19,6 @@ class UrlValidator
         $validator->rule('url', 'name');
         $validator->rule('lengthMax', 'name', 255);
 
-        /**
-         * personal Valitron\Validator validate()
-         */
         if (!$validator->validate()) {
             $errors['name'] = 'Некорректный URL';
         }

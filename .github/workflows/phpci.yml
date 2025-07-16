@@ -1,36 +1,32 @@
 name: PHP CI
 
 on:
-  push:
-    branches:
-      - main
-  pull_request:
-    branches:
-      - main
+  - push
+  - pull_request
 
 jobs:
   build:
+
     runs-on: ubuntu-latest
 
-    strategy:
-      matrix:
-        php-versions: ['8.3.6']
-
     steps:
-        # https://github.com/actions/checkout
       - uses: actions/checkout@v4
-        # Step's name
-      - name: Setup PHP ${{ matrix.php-versions }}
-        # Action gives to setup the PHP environment to test application
-        # https://github.com/shivammathur/setup-php
+
+      - name: Setup PHP
         uses: shivammathur/setup-php@v2
         with:
-          php-version: ${{ matrix.php-versions }}
+          php-version: '8.3'
 
       - name: PHP Security Checker
         uses: StephaneBour/actions-php-security-checker@1.1
 
       - name: Setup project
         run: make setup
+
       - name: Run linter
         run: make lint
+
+      # - name: SonarQube Scan
+      #   uses: SonarSource/sonarqube-scan-action@v5
+      #   env:
+      #     SONAR_TOKEN: ${{ secrets.SONAR_TOKEN }}
