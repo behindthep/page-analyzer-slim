@@ -1,8 +1,8 @@
 <?php
 
-namespace Page\Analyzer\Connections;
+namespace Page\Analyzer;
 
-final class PostgreConnection implements ConnectionInterface
+final class Connection
 {
     private \PDO $pdo;
 

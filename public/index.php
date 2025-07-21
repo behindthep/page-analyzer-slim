@@ -10,15 +10,13 @@ use DI\Container;
 use Dotenv\Dotenv;
 use GuzzleHttp\Client;
 use DiDom\Document;
-use Page\Analyzer\Connections\ConnectionInterface;
-use Database\Factories\ConnectionFactory;
 use Page\Analyzer\{
     UrlValidator,
     UrlRepository,
     CheckRepository,
-    TablesInitializer
+    TablesInitializer,
+    Connection
 };
-
 
 session_start();
 
@@ -39,13 +37,9 @@ $container->set('flash', function () {
     return new \Slim\Flash\Messages();
 });
 
-$container->set(ConnectionInterface::class, function () {
-    $dbType = $_ENV['DB_TYPE'] ?? 'sqlite';
-    return ConnectionFactory::create($dbType);
-});
-
-$container->set(\PDO::class, function ($c) {
-    return $c->get(ConnectionInterface::class)->get();
+$container->set(\PDO::class, function () {
+    $connection = new Connection();
+    return $connection->get();
 });
 
 $container->get(TablesInitializer::class);
